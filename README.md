@@ -65,6 +65,22 @@ dotnet run --project src/ChessGUI.App
 dotnet test
 ```
 
+## Kurulum Sihirbazı (Windows setup.exe)
+
+Son kullanıcılar için tek dosyalık, .NET runtime gerektirmeyen bir kurulum
+sihirbazı üretmek için [Inno Setup 6](https://jrsoftware.org/isdl.php) kurup
+şunu çalıştırın:
+
+```powershell
+installer\build-installer.ps1
+```
+
+Betik önce `ChessGUI.App`'i self-contained win-x64 olarak publish eder, sonra
+`installer\ChessGUI.iss` dosyasını derleyerek `installer\Output\ChessGUISetup-<versiyon>.exe`
+dosyasını oluşturur. Bu dosya çalıştırıldığında kurulum yeri seçimi, Başlat
+Menüsü/masaüstü kısayolu ve kaldırma (uninstall) desteğiyle klasik bir Windows
+kurulum sihirbazı açılır.
+
 ## Katkı
 
 Bu proje kişisel/hobi amaçlı geliştirilmektedir. Hata bildirimi ve öneriler için Issues sekmesini kullanabilirsiniz.

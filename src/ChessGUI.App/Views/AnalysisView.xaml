@@ -70,7 +70,7 @@
         </Grid.ColumnDefinitions>
 
         <!-- Değerlendirme çubuğu -->
-        <controls:EvalBar Grid.Column="0" Width="26"
+        <controls:EvalBar Grid.Column="0" Width="70" HorizontalAlignment="Left"
                           WhiteWinProbability="{Binding Engine.WhiteWinProbability}"
                           Caption="{Binding Engine.EvalCaption}"
                           WhiteFavored="{Binding Engine.WhiteFavored}"/>

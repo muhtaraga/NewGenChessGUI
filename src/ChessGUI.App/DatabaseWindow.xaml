@@ -16,7 +16,7 @@
             <Setter Property="Height" Value="26"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
         </Style>
-        <Style TargetType="ComboBox">
+        <Style TargetType="ComboBox" BasedOn="{StaticResource {x:Type ComboBox}}">
             <Setter Property="Height" Value="26"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
         </Style>

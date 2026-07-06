@@ -45,6 +45,11 @@ public sealed class EvalBar : FrameworkElement
     private static readonly Brush BlackFill = Freeze(Color.FromRgb(0x30, 0x30, 0x36));
     private static readonly Typeface Font = new("Segoe UI");
 
+    private const double BarWidth = 22;
+    private const double BadgeGap = 4;
+    private const double BadgePadX = 5;
+    private const double BadgePadY = 2;
+
     private static Brush Freeze(Color c) { var b = new SolidColorBrush(c); b.Freeze(); return b; }
 
     protected override void OnRender(DrawingContext dc)
@@ -52,18 +57,27 @@ public sealed class EvalBar : FrameworkElement
         double w = ActualWidth, h = ActualHeight;
         if (w <= 0 || h <= 0) return;
 
+        double barW = Math.Min(BarWidth, w);
         double p = Math.Clamp(WhiteWinProbability, 0, 1);
         double whiteHeight = h * p;
+        double boundaryY = h - whiteHeight;
 
-        dc.DrawRectangle(BlackFill, null, new Rect(0, 0, w, h - whiteHeight));
-        dc.DrawRectangle(WhiteFill, null, new Rect(0, h - whiteHeight, w, whiteHeight));
+        dc.DrawRectangle(BlackFill, null, new Rect(0, 0, barW, boundaryY));
+        dc.DrawRectangle(WhiteFill, null, new Rect(0, boundaryY, barW, whiteHeight));
 
-        // Değerlendirme metni, avantajlı uçta ve o uçun zıt renginde.
+        // Değerlendirme, çubuğun hemen yanında, siyah/beyaz kesişim hizasında sabit
+        // renkli bir rozetin (badge) içinde gösterilir; böylece hangi tema veya hangi
+        // taraf favori olursa olsun her zaman okunur kalır.
         double dpi = VisualTreeHelper.GetDpi(this).PixelsPerDip;
-        Brush textBrush = WhiteFavored ? BlackFill : WhiteFill;
         var ft = new FormattedText(Caption, CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
-            Font, Math.Max(9, w * 0.34), textBrush, dpi) { TextAlignment = TextAlignment.Center };
-        double y = WhiteFavored ? h - ft.Height - 3 : 3;
-        dc.DrawText(ft, new Point(w / 2 - ft.Width / 2, y));
+            Font, 12, WhiteFill, dpi);
+
+        double badgeW = ft.Width + BadgePadX * 2;
+        double badgeH = ft.Height + BadgePadY * 2;
+        double cy = Math.Clamp(boundaryY, badgeH / 2, Math.Max(badgeH / 2, h - badgeH / 2));
+        var badgeRect = new Rect(barW + BadgeGap, cy - badgeH / 2, badgeW, badgeH);
+
+        dc.DrawRoundedRectangle(BlackFill, null, badgeRect, 3, 3);
+        dc.DrawText(ft, new Point(badgeRect.X + BadgePadX, badgeRect.Y + BadgePadY));
     }
 }

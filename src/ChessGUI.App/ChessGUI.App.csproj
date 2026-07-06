@@ -29,6 +29,12 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <AssemblyName>ChessGUI</AssemblyName>
+    <AssemblyTitle>ChessGUI</AssemblyTitle>
+    <Product>ChessGUI</Product>
+    <Company>ChessGUI</Company>
+    <Version>1.0.1</Version>
+    <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
   </PropertyGroup>
 
 </Project>

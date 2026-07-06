@@ -34,3 +34,9 @@ engines/
 *.db
 *.db-shm
 *.db-wal
+
+# Installer build output (kurulum sihirbazı çıktıları)
+installer/Output/
+
+# Tanıtım sitesi (GitHub'da gözükmesin, sadece yerel olarak barındırılıyor)
+website/
