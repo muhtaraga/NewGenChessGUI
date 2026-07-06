@@ -13,27 +13,35 @@ public static class PgnSplitter
     public static IEnumerable<string> Split(TextReader reader)
     {
         var buffer = new StringBuilder();
-        bool inMoves = false;   // etiketlerden sonra hamle bölümüne geçtik mi
+        bool inMoves = false;          // etiketlerden sonra hamle bölümüne geçtik mi
+        bool sawTagBlock = false;      // bu oyun için en az bir etiket satırı gördük mü
+        bool sawBlankAfterTags = false; // etiketlerden sonra boş satır gördük mü (hamlesiz oyun/bay dahil)
         bool hasContent = false;
 
         string? line;
         while ((line = reader.ReadLine()) != null)
         {
             bool isTag = IsTagLine(line);
+            bool isBlank = line.Trim().Length == 0;
 
-            // Hamle metninden sonra yeni bir etiket satırı: önceki oyun burada biter.
-            if (isTag && inMoves)
+            // Yeni bir etiket satırı, önceki oyunun etiket bölümü hamle metniyle ya da (hamlesiz
+            // bay/forfeit oyunlarda olduğu gibi) yalnızca boş bir satırla kapanmışsa gelir:
+            // önceki oyun burada biter.
+            if (isTag && sawTagBlock && (inMoves || sawBlankAfterTags))
             {
                 yield return buffer.ToString();
                 buffer.Clear();
                 inMoves = false;
+                sawTagBlock = false;
+                sawBlankAfterTags = false;
                 hasContent = false;
             }
 
-            if (!isTag && line.Trim().Length > 0)
-                inMoves = true;
+            if (isTag) sawTagBlock = true;
+            else if (isBlank) { if (sawTagBlock && !inMoves) sawBlankAfterTags = true; }
+            else inMoves = true;
 
-            if (isTag || line.Trim().Length > 0 || hasContent)
+            if (isTag || !isBlank || hasContent)
             {
                 buffer.Append(line).Append('\n');
                 hasContent = true;

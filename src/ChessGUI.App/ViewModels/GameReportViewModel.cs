@@ -78,6 +78,10 @@ public sealed partial class GameReportViewModel : ObservableObject
             int total = nodes.Count;
             if (total < 2) { StatusText = "Analiz edilecek hamle yok."; IsRunning = false; return; }
 
+            // Üç-tekrar tespiti için: her pozisyonun anahtarı, sırayla (bir kez hesaplanır).
+            var zobristKeys = new ulong[total];
+            for (int k = 0; k < total; k++) zobristKeys[k] = positions[k].ZobristKey;
+
             await analyzer.StartAsync(path, Math.Max(1, Environment.ProcessorCount - 1), 128, ct);
 
             var winWhite = new double[total];
@@ -91,7 +95,8 @@ public sealed partial class GameReportViewModel : ObservableObject
                 Position p = positions[i];
                 bool whiteToMove = p.SideToMove == Color.White;
 
-                switch (GameEnd.Evaluate(p))
+                var historyUpToHere = new ArraySegment<ulong>(zobristKeys, 0, i + 1);
+                switch (GameEnd.Evaluate(p, historyUpToHere))
                 {
                     case GameStatus.Checkmate:
                         winWhite[i] = whiteToMove ? 0 : 100;
@@ -101,6 +106,7 @@ public sealed partial class GameReportViewModel : ObservableObject
                     case GameStatus.Stalemate:
                     case GameStatus.FiftyMoveRule:
                     case GameStatus.InsufficientMaterial:
+                    case GameStatus.Repetition:
                         winWhite[i] = 50;
                         nodes[i].EvalCp = 0;
                         break;

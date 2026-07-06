@@ -94,7 +94,18 @@ public sealed partial class DatabaseViewModel : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
+            // Açma başarısız oldu; _db zaten dispose edildi. _repo/_bookRepo'yu da temizle,
+            // yoksa dispose edilmiş bağlantıya işaret ederek sonraki bir arama/kitap sorgusunda
+            // ObjectDisposedException fırlatırlar.
+            _db = null;
+            _repo = null;
+            _bookRepo = null;
+            IsOpen = false;
             StatusText = $"Açılamadı: {ex.Message}";
+            SearchCommand.NotifyCanExecuteChanged();
+            ImportPgnCommand.NotifyCanExecuteChanged();
+            SearchPositionCommand.NotifyCanExecuteChanged();
+            RepositoryChanged?.Invoke();
         }
     }
 
@@ -135,6 +146,14 @@ public sealed partial class DatabaseViewModel : ObservableObject, IDisposable
                          $"({result.GamesPerSecond:N0} oyun/sn, {result.PositionsIndexed:N0} pozisyon indekslendi).";
             RefreshStats();
             RepositoryChanged?.Invoke(); // kitap panosu yeni oyunlarla güncellensin
+        }
+        catch (PartialImportException ex)
+        {
+            // Önceki toplu işlemler zaten veritabanına yazıldı — kullanıcıya kısmi başarıyı bildir,
+            // aksi halde "hata" mesajı yüzlerce/binlerce zaten aktarılmış oyunu gizler.
+            StatusText = ex.Message;
+            RefreshStats();
+            RepositoryChanged?.Invoke();
         }
         catch (Exception ex)
         {

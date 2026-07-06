@@ -239,12 +239,13 @@ public sealed partial class ShellViewModel : ObservableObject, IDisposable
         OpeningInfo? opening = Eco.Classify(Board.Tree, Board.CurrentNode);
         OpeningText = opening != null ? $"{opening.Eco} · {opening.Name}" : "";
 
-        StatusText = GameEnd.Evaluate(pos) switch
+        StatusText = GameEnd.Evaluate(pos, Board.Tree.ZobristHistory(Board.CurrentNode)) switch
         {
             GameStatus.Checkmate => pos.SideToMove == Color.White ? "Mat — Siyah kazandı" : "Mat — Beyaz kazandı",
             GameStatus.Stalemate => "Pat — beraberlik",
             GameStatus.FiftyMoveRule => "50 hamle kuralı — beraberlik",
             GameStatus.InsufficientMaterial => "Yetersiz materyal — beraberlik",
+            GameStatus.Repetition => "Üç tekrar — beraberlik",
             _ => pos.IsSideToMoveInCheck() ? "Şah!" : "Oyun sürüyor"
         };
     }

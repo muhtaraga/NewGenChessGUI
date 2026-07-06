@@ -1,3 +1,4 @@
+using System;
 using ChessGUI.Core.Board;
 using ChessGUI.Core.Moves;
 using Xunit;
@@ -6,6 +7,29 @@ namespace ChessGUI.Core.Tests;
 
 public class FenAndZobristTests
 {
+    [Fact]
+    public void Fen_RejectsOverfullRank()
+    {
+        // 16 taş bir satırda: dizinin dışına taşıp çökmek yerine FormatException fırlatmalı.
+        Assert.Throws<FormatException>(() =>
+            Position.FromFen("pppppppppppppppp/8/8/8/8/8/8/RNBQKBNR w KQkq - 0 1"));
+    }
+
+    [Fact]
+    public void Fen_RejectsUnderfullRank()
+    {
+        // İlk satırda yalnızca 7 kare: tahtayı sessizce kaydırmak yerine FormatException fırlatmalı.
+        Assert.Throws<FormatException>(() =>
+            Position.FromFen("7/8/8/8/8/8/8/RNBQKBNR w KQkq - 0 1"));
+    }
+
+    [Fact]
+    public void Fen_RejectsTooFewRanks()
+    {
+        Assert.Throws<FormatException>(() =>
+            Position.FromFen("8/8/8/8/8/8/8 w KQkq - 0 1"));
+    }
+
     [Theory]
     [InlineData("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")]
     [InlineData("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1")]

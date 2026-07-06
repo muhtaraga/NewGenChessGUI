@@ -296,14 +296,26 @@ public sealed class Position
         string[] parts = fen.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         if (parts.Length < 4) throw new FormatException($"Geçersiz FEN: '{fen}'");
 
-        // 1) Tahta — FEN 8. yataydan (siyah) başlar.
+        // 1) Tahta — FEN 8. yataydan (siyah) başlar. Her satırın tam 8 kareye denk gelmesi
+        // ve toplam 8 satır olması doğrulanır; aksi halde tahta sessizce kayar ya da dizinin
+        // dışına taşar (bkz. testler).
         int rank = 7, file = 0;
         foreach (char c in parts[0])
         {
-            if (c == '/') { rank--; file = 0; }
-            else if (char.IsDigit(c)) file += c - '0';
+            if (c == '/')
+            {
+                if (file != 8 || rank == 0) throw new FormatException($"Geçersiz FEN: '{fen}'");
+                rank--;
+                file = 0;
+            }
+            else if (char.IsDigit(c))
+            {
+                file += c - '0';
+                if (file > 8) throw new FormatException($"Geçersiz FEN: '{fen}'");
+            }
             else
             {
+                if (file >= 8) throw new FormatException($"Geçersiz FEN: '{fen}'");
                 Piece piece = Piece.FromFenChar(c);
                 if (piece.IsNone) throw new FormatException($"Geçersiz FEN taşı: '{c}'");
                 int sq = Squares.Of(file, rank);
@@ -312,6 +324,7 @@ public sealed class Position
                 file++;
             }
         }
+        if (file != 8 || rank != 0) throw new FormatException($"Geçersiz FEN: '{fen}'");
 
         // 2) Sıra.
         p._sideToMove = parts[1] == "b" ? Color.Black : Color.White;

@@ -30,6 +30,11 @@ public sealed partial class PlayController : ObservableObject, IDisposable
     private TimeControl _blackTimeControl = TimeControl.Unlimited();
     private string? _pendingStartFen;
 
+    // StartGame/PrepareSetup her çağrıldığında artar; bir önceki çağrının motor başlatma
+    // görevi (LaunchEnginesAndStartAsync) tamamlandığında hâlâ güncel oyun olup olmadığını
+    // anlamak için kullanılır (çift-başlatma yarışını önler).
+    private int _gameGeneration;
+
     public ClockViewModel Clock { get; } = new();
     public PositionEditorViewModel Editor { get; } = new();
 
@@ -97,7 +102,7 @@ public sealed partial class PlayController : ObservableObject, IDisposable
         StatusText = "Oyun başladı.";
         _board.InputLocked = true; // ilk motor hazır olana kadar / sıraya göre aşağıda açılır
 
-        _ = LaunchEnginesAndStartAsync();
+        _ = LaunchEnginesAndStartAsync(_gameGeneration);
     }
 
     /// <summary>Kurulum panelini göstermeye hazırlar: çalışan oyunu/motoru durdurur ve kurulum durumuna geçer.</summary>
@@ -111,24 +116,41 @@ public sealed partial class PlayController : ObservableObject, IDisposable
         _board.LoadGame(new GameTree(_pendingStartFen ?? Position.StartFen));
     }
 
-    private async Task LaunchEnginesAndStartAsync()
+    private async Task LaunchEnginesAndStartAsync(int generation)
     {
+        UciEngine? white = null, black = null;
         try
         {
             // Her taraf için ayrı bir motor örneği başlatılır (C/C aynı profili kullanıyorsa bile
             // iki bağımsız süreç olur, böylece biri diğerinin arama durumunu etkilemez).
             if (_whitePlayer.Kind == Models.PlayerKind.Engine && _whitePlayer.Engine != null)
-                _whiteEngine = await CreateEngineAsync(_whitePlayer.Engine);
+                white = await CreateEngineAsync(_whitePlayer.Engine);
             if (_blackPlayer.Kind == Models.PlayerKind.Engine && _blackPlayer.Engine != null)
-                _blackEngine = await CreateEngineAsync(_blackPlayer.Engine);
+                black = await CreateEngineAsync(_blackPlayer.Engine);
         }
         catch (Exception ex)
         {
-            StatusText = $"Motor başlatılamadı: {ex.Message}";
-            IsGameActive = false;
+            white?.Dispose();
+            if (!ReferenceEquals(black, white)) black?.Dispose();
+            if (generation == _gameGeneration)
+            {
+                StatusText = $"Motor başlatılamadı: {ex.Message}";
+                IsGameActive = false;
+            }
             return;
         }
 
+        if (generation != _gameGeneration)
+        {
+            // Bu motorlar başlatılırken StartGame/PrepareSetup tekrar çağrılmış: artık güncel
+            // olmayan bu oyunun motorlarını at, mevcut oyunun durumuna karışma.
+            white?.Dispose();
+            if (!ReferenceEquals(black, white)) black?.Dispose();
+            return;
+        }
+
+        _whiteEngine = white;
+        _blackEngine = black;
         Clock.Start();
         AdvanceTurn();
     }
@@ -146,7 +168,7 @@ public sealed partial class PlayController : ObservableObject, IDisposable
     {
         if (!IsGameActive || IsFinished) return;
 
-        GameStatus status = GameEnd.Evaluate(_board.Position);
+        GameStatus status = GameEnd.Evaluate(_board.Position, _board.Tree.ZobristHistory(_board.CurrentNode));
         if (status != GameStatus.Ongoing) { FinishGame(status); return; }
 
         Color side = _board.Position.SideToMove;
@@ -231,6 +253,7 @@ public sealed partial class PlayController : ObservableObject, IDisposable
             GameStatus.Stalemate => "Pat — beraberlik.",
             GameStatus.FiftyMoveRule => "50 hamle kuralı — beraberlik.",
             GameStatus.InsufficientMaterial => "Yetersiz materyal — beraberlik.",
+            GameStatus.Repetition => "Üç tekrar — beraberlik.",
             _ => "Oyun bitti."
         };
         _board.Tree.Tags["Result"] = ResultText;
@@ -312,6 +335,7 @@ public sealed partial class PlayController : ObservableObject, IDisposable
 
     private void StopInternal()
     {
+        _gameGeneration++; // hâlâ süren bir motor başlatma görevi varsa artık geçersiz say
         IsGameActive = false;
         IsFinished = false;
         Clock.Pause();

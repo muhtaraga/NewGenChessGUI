@@ -9,7 +9,10 @@ namespace ChessGUI.Engine;
 /// </summary>
 public sealed class UciEngine : IDisposable
 {
+    private readonly object _gate = new();
     private Process? _process;
+    private CancellationTokenSource? _readLoopCts;
+    private Task? _readLoopTask;
     private readonly List<UciOption> _options = new();
     private TaskCompletionSource<bool>? _uciOkTcs;
     private TaskCompletionSource<bool>? _readyTcs;
@@ -42,7 +45,8 @@ public sealed class UciEngine : IDisposable
 
         _process = new Process { StartInfo = psi, EnableRaisingEvents = true };
         _process.Start();
-        _ = ReadLoopAsync(_process.StandardOutput, ct);
+        _readLoopCts = new CancellationTokenSource();
+        _readLoopTask = ReadLoopAsync(_process.StandardOutput, _readLoopCts.Token);
 
         _uciOkTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         Send("uci");
@@ -63,6 +67,7 @@ public sealed class UciEngine : IDisposable
         }
         catch (OperationCanceledException) { /* normal kapanış */ }
         catch (IOException) { /* süreç sonlandı */ }
+        catch (ObjectDisposedException) { /* Dispose() akışı kapattı */ }
     }
 
     private void HandleLine(string line)
@@ -95,8 +100,11 @@ public sealed class UciEngine : IDisposable
 
     public void Send(string command)
     {
-        if (_process is { HasExited: false })
-            _process.StandardInput.WriteLine(command);
+        lock (_gate)
+        {
+            if (_process is { HasExited: false })
+                _process.StandardInput.WriteLine(command);
+        }
     }
 
     public void SetOption(string name, string value) => Send($"setoption name {name} value {value}");
@@ -140,16 +148,23 @@ public sealed class UciEngine : IDisposable
 
     public void Dispose()
     {
-        try
+        lock (_gate)
         {
-            if (_process is { HasExited: false })
+            try
             {
-                Send("quit");
-                if (!_process.WaitForExit(500))
-                    _process.Kill(entireProcessTree: true);
+                _readLoopCts?.Cancel();
+                if (_process is { HasExited: false })
+                {
+                    Send("quit");
+                    if (!_process.WaitForExit(500))
+                        _process.Kill(entireProcessTree: true);
+                }
+                // Okuyucu döngüsü tamamen durana kadar bekle, aksi halde aşağıdaki Dispose()
+                // akışları kapatırken hâlâ ReadLineAsync içinde olabilir.
+                try { _readLoopTask?.Wait(500); } catch { /* iptal/akış kapanışı bekleniyor */ }
             }
+            catch { /* kapanışta yut */ }
+            finally { _process?.Dispose(); _process = null; }
         }
-        catch { /* kapanışta yut */ }
-        finally { _process?.Dispose(); _process = null; }
     }
 }

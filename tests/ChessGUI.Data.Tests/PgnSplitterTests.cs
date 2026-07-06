@@ -47,4 +47,32 @@ public class PgnSplitterTests
         var games = PgnSplitter.Split(new StringReader(tight)).ToList();
         Assert.Equal(2, games.Count);
     }
+
+    [Fact]
+    public void Split_SeparatesGames_WhenFirstGameHasNoMoves()
+    {
+        // "Bay" turu: yalnızca etiketler, hiç hamle yok. Bir sonraki oyunun etiketlerine
+        // karışmadan ayrı bir oyun olarak dönmeli.
+        const string byeThenGame = """
+            [Event "Round 5"]
+            [White "Smith"]
+            [Black "bye"]
+            [Result "1-0"]
+
+            [Event "Round 6"]
+            [White "Jones"]
+            [Black "Brown"]
+            [Result "*"]
+
+            1. e4 e5 *
+            """;
+
+        var games = PgnSplitter.Split(new StringReader(byeThenGame)).ToList();
+
+        Assert.Equal(2, games.Count);
+        Assert.Contains("Smith", games[0]);
+        Assert.DoesNotContain("Jones", games[0]);
+        Assert.Contains("Jones", games[1]);
+        Assert.Contains("e4", games[1]);
+    }
 }

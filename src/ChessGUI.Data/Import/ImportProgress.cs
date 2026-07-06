@@ -9,6 +9,23 @@ public readonly record struct ImportResult(int GamesImported, int PositionsIndex
     public double GamesPerSecond => Elapsed.TotalSeconds > 0 ? GamesImported / Elapsed.TotalSeconds : 0;
 }
 
+/// <summary>
+/// İçe aktarma bir toplu-işlem (batch) sınırından sonra hata ile durduğunda fırlatılır.
+/// Önceki toplu işlemler zaten veritabanına <c>Commit</c> edilmiş olduğundan, çağıran taraf
+/// bu istisnayı yakalayıp <see cref="PartialResult"/>'taki oyunların gerçekten aktarıldığını
+/// kullanıcıya bildirmelidir — aksi halde kısmi başarı tam başarısızlık gibi görünür.
+/// </summary>
+public sealed class PartialImportException : Exception
+{
+    public ImportResult PartialResult { get; }
+
+    public PartialImportException(ImportResult partialResult, Exception inner)
+        : base($"{partialResult.GamesImported} oyun aktarıldıktan sonra hata: {inner.Message}", inner)
+    {
+        PartialResult = partialResult;
+    }
+}
+
 /// <summary>İçe aktarma davranış ayarları.</summary>
 public sealed class ImportOptions
 {

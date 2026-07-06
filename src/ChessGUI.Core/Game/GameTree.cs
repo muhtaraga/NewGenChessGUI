@@ -41,6 +41,23 @@ public sealed class GameTree
     }
 
     /// <summary>
+    /// Kökten <paramref name="node"/>'a kadar (o dahil) her pozisyonun Zobrist anahtarı, sırayla.
+    /// Üç-tekrar beraberliği tespiti için <see cref="GameEnd.Evaluate"/>'e verilir.
+    /// </summary>
+    public IReadOnlyList<ulong> ZobristHistory(GameNode node)
+    {
+        Position pos = CreateStartPosition();
+        var keys = new List<ulong> { pos.ZobristKey };
+        foreach (GameNode n in PathFromRoot(node))
+        {
+            if (n.IsRoot) continue;
+            pos.MakeMove(n.Move);
+            keys.Add(pos.ZobristKey);
+        }
+        return keys;
+    }
+
+    /// <summary>
     /// <paramref name="parent"/> düğümüne bir hamle ekler. Aynı hamle zaten varsa mevcut çocuk
     /// döndürülür (giriş transpozisyonu). Aksi halde yeni düğüm eklenir; ilk çocuk yoksa ana hat,
     /// varsa varyant olur. <paramref name="positionBefore"/> hamleden önceki pozisyondur (SAN + numara için).

@@ -95,4 +95,48 @@ public class SanAndGameEndTests
         var pos = Position.FromFen("8/8/4k3/8/8/3K4/8/8 w - - 0 1");
         Assert.Equal(GameStatus.InsufficientMaterial, GameEnd.Evaluate(pos));
     }
+
+    [Fact]
+    public void GameEnd_InsufficientMaterial_SameColorBishops()
+    {
+        // Beyaz fil b1 (açık kare), siyah fil h1 (açık kare) — aynı renk, mat imkânsız.
+        var pos = Position.FromFen("4k3/8/8/8/8/8/8/1B2K2b w - - 0 1");
+        Assert.Equal(GameStatus.InsufficientMaterial, GameEnd.Evaluate(pos));
+    }
+
+    [Fact]
+    public void GameEnd_SufficientMaterial_OppositeColorBishops()
+    {
+        // Beyaz fil b1 (açık), siyah fil a1 (koyu) — zıt renk, mat mümkün, beraberlik değil.
+        var pos = Position.FromFen("4k3/8/8/8/8/8/8/bB2K3 w - - 0 1");
+        Assert.Equal(GameStatus.Ongoing, GameEnd.Evaluate(pos));
+    }
+
+    [Fact]
+    public void GameEnd_Repetition_ThreefoldDetected()
+    {
+        var pos = Position.CreateStandard();
+        var history = new List<ulong> { pos.ZobristKey };
+
+        void Play(string san)
+        {
+            var move = San.Parse(pos, san)!.Value;
+            pos.MakeMove(move);
+            history.Add(pos.ZobristKey);
+        }
+
+        // Şahları ileri geri oynatarak aynı pozisyona üçüncü kez dön.
+        Play("Nf3"); Play("Nf6"); Play("Ng1"); Play("Ng8"); // 1. tekrar (başlangıç, 2 kez)
+        Play("Nf3"); Play("Nf6"); Play("Ng1"); Play("Ng8"); // 2. tekrar (başlangıç, 3 kez)
+
+        Assert.Equal(GameStatus.Repetition, GameEnd.Evaluate(pos, history));
+    }
+
+    [Fact]
+    public void GameEnd_NoRepetition_WithoutHistory()
+    {
+        // history verilmezse üç-tekrar kontrolü atlanır (geriye dönük uyumluluk).
+        var pos = Position.CreateStandard();
+        Assert.Equal(GameStatus.Ongoing, GameEnd.Evaluate(pos));
+    }
 }

@@ -64,10 +64,17 @@ public sealed class PgnImporter
 
             tx.Commit();
         }
-        catch
+        catch (OperationCanceledException)
         {
             tx.Rollback();
             throw;
+        }
+        catch (Exception ex)
+        {
+            tx.Rollback();
+            // Önceki batch'ler zaten commit edildi (bkz. yukarıdaki döngü) — bu sayıları kaybetmeden
+            // ilet, yoksa çağıran taraf kısmi başarıyı tam başarısızlık sanır.
+            throw new PartialImportException(new ImportResult(imported, indexed, skipped, sw.Elapsed), ex);
         }
         finally
         {
