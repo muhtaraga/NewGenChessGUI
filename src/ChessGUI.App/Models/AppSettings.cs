@@ -31,4 +31,8 @@ public sealed class AppSettings
 
     // --- Oyna/Analiz tahta senkronu -----------------------------------------
     public bool SyncPlayAndAnalysisBoards { get; set; } = false;
+
+    // --- Analiz -------------------------------------------------------------
+    public bool ShowEngineArrows { get; set; } = true;
+    public int MultiPv { get; set; } = 3;
 }

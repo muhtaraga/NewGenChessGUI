@@ -45,12 +45,22 @@ public sealed class BoardControl : FrameworkElement
         nameof(AnimationDurationMs), typeof(int), typeof(BoardControl),
         new FrameworkPropertyMetadata(180));
 
+    public static readonly DependencyProperty ArrowsProperty = DependencyProperty.Register(
+        nameof(Arrows), typeof(IReadOnlyList<BoardArrow>), typeof(BoardControl),
+        new FrameworkPropertyMetadata(Array.Empty<BoardArrow>(), FrameworkPropertyMetadataOptions.AffectsRender));
+
+    public static readonly DependencyProperty ShowEngineArrowsProperty = DependencyProperty.Register(
+        nameof(ShowEngineArrows), typeof(bool), typeof(BoardControl),
+        new FrameworkPropertyMetadata(true, FrameworkPropertyMetadataOptions.AffectsRender));
+
     public Brush LightSquare { get => (Brush)GetValue(LightSquareProperty); set => SetValue(LightSquareProperty, value); }
     public Brush DarkSquare { get => (Brush)GetValue(DarkSquareProperty); set => SetValue(DarkSquareProperty, value); }
     public bool ShowCoordinates { get => (bool)GetValue(ShowCoordinatesProperty); set => SetValue(ShowCoordinatesProperty, value); }
     public double PieceScale { get => (double)GetValue(PieceScaleProperty); set => SetValue(PieceScaleProperty, value); }
     public bool AnimationEnabled { get => (bool)GetValue(AnimationEnabledProperty); set => SetValue(AnimationEnabledProperty, value); }
     public int AnimationDurationMs { get => (int)GetValue(AnimationDurationMsProperty); set => SetValue(AnimationDurationMsProperty, value); }
+    public IReadOnlyList<BoardArrow> Arrows { get => (IReadOnlyList<BoardArrow>)GetValue(ArrowsProperty); set => SetValue(ArrowsProperty, value); }
+    public bool ShowEngineArrows { get => (bool)GetValue(ShowEngineArrowsProperty); set => SetValue(ShowEngineArrowsProperty, value); }
 
     public Brush LastMoveBrush { get; set; } = new SolidColorBrush(MediaColor.FromArgb(0x88, 0xF6, 0xF6, 0x69));
     public Brush SelectedBrush { get; set; } = new SolidColorBrush(MediaColor.FromArgb(0x99, 0xF6, 0xF6, 0x69));
@@ -61,6 +71,8 @@ public sealed class BoardControl : FrameworkElement
     private static readonly Brush WhiteEdge = new SolidColorBrush(MediaColor.FromRgb(0x33, 0x33, 0x33));
     private static readonly Brush BlackBody = new SolidColorBrush(MediaColor.FromRgb(0x2B, 0x2B, 0x2B));
     private static readonly Brush BlackEdge = new SolidColorBrush(MediaColor.FromRgb(0xD8, 0xD8, 0xD0));
+
+    private static readonly MediaColor EngineArrowColor = MediaColor.FromRgb(0x33, 0x8F, 0xE6);
 
     private static readonly Typeface PieceFont = new("Segoe UI Symbol");
     private static readonly Typeface CoordFont = new(new FontFamily("Segoe UI"),
@@ -325,8 +337,69 @@ public sealed class BoardControl : FrameworkElement
             }
         }
 
+        // Motorun önerdiği hamleler (MultiPV): en öncelikli en kalın/belirgin ok.
+        if (ShowEngineArrows && Arrows.Count > 0)
+            DrawEngineArrows(dc);
+
         if (_promotionPending)
             DrawPromotionChooser(dc, dpi);
+    }
+
+    private void DrawEngineArrows(DrawingContext dc)
+    {
+        int maxRank = 1;
+        foreach (BoardArrow a in Arrows)
+            if (a.Rank > maxRank) maxRank = a.Rank;
+
+        foreach (BoardArrow a in Arrows)
+            DrawArrow(dc, a.From, a.To, a.Rank, maxRank);
+    }
+
+    private void DrawArrow(DrawingContext dc, int from, int to, int rank, int maxRank)
+    {
+        Point p1 = SquareCenter(from);
+        Point p2 = SquareCenter(to);
+        Vector v = p2 - p1;
+        double len = v.Length;
+        if (len < 1e-3) return;
+        Vector dir = v / len;
+
+        // rank 1 (en öncelikli) -> t=1.0 (en kalın/belirgin); daha düşük öncelik -> daha küçük t.
+        double t = 1.0 - (rank - 1) / (double)maxRank;
+        double s = SquareSize;
+        double thickness = s * (0.06 + 0.11 * t);
+        double headLength = s * (0.20 + 0.16 * t);
+        double headWidth = thickness * 2.6;
+        byte alpha = (byte)(90 + 130 * t);
+
+        var brush = new SolidColorBrush(MediaColor.FromArgb(alpha, EngineArrowColor.R, EngineArrowColor.G, EngineArrowColor.B));
+        var pen = new Pen(brush, thickness) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Flat };
+
+        // Kare merkezlerine tam binmesin diye başlangıç/bitiş biraz içeride bırakılır.
+        Point start = p1 + dir * (s * 0.20);
+        Point tip = p2 - dir * (s * 0.12);
+        Point shaftEnd = tip - dir * headLength;
+        dc.DrawLine(pen, start, shaftEnd);
+
+        Vector perp = new(-dir.Y, dir.X);
+        Point baseL = shaftEnd + perp * (headWidth / 2);
+        Point baseR = shaftEnd - perp * (headWidth / 2);
+
+        var head = new StreamGeometry();
+        using (StreamGeometryContext ctx = head.Open())
+        {
+            ctx.BeginFigure(tip, true, true);
+            ctx.LineTo(baseL, true, false);
+            ctx.LineTo(baseR, true, false);
+        }
+        head.Freeze();
+        dc.DrawGeometry(brush, null, head);
+    }
+
+    private Point SquareCenter(int square)
+    {
+        Rect r = SquareRect(square);
+        return new Point(r.X + r.Width / 2, r.Y + r.Height / 2);
     }
 
     /// <summary>Pozisyon düzenleme modunda çizim: sadece kareler + taşlar (hamle/vurgu/animasyon yok).</summary>

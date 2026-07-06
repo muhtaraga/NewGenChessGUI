@@ -26,6 +26,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     [ObservableProperty] private int _animationDurationMs;
     [ObservableProperty] private bool _autoFlipBoard;
     [ObservableProperty] private bool _syncPlayAndAnalysisBoards;
+    [ObservableProperty] private bool _showEngineArrows;
     [ObservableProperty] private string _statusText = "";
 
     /// <summary>Ayar değiştikçe canlı uygulanması için (BoardControl binding'i dinler).</summary>
@@ -48,6 +49,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         _animationDurationMs = s.AnimationDurationMs;
         _autoFlipBoard = s.AutoFlipBoard;
         _syncPlayAndAnalysisBoards = s.SyncPlayAndAnalysisBoards;
+        _showEngineArrows = s.ShowEngineArrows;
     }
 
     partial void OnThemeChanged(string value)
@@ -65,6 +67,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     partial void OnAnimationDurationMsChanged(int value) => Apply();
     partial void OnAutoFlipBoardChanged(bool value) => Apply();
     partial void OnSyncPlayAndAnalysisBoardsChanged(bool value) => Apply();
+    partial void OnShowEngineArrowsChanged(bool value) => Apply();
 
     private void Apply()
     {
@@ -80,6 +83,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         s.AnimationDurationMs = AnimationDurationMs;
         s.AutoFlipBoard = AutoFlipBoard;
         s.SyncPlayAndAnalysisBoards = SyncPlayAndAnalysisBoards;
+        s.ShowEngineArrows = ShowEngineArrows;
 
         LiveChanged?.Invoke(this, EventArgs.Empty);
     }
@@ -107,6 +111,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         AnimationDurationMs = defaults.AnimationDurationMs;
         AutoFlipBoard = defaults.AutoFlipBoard;
         SyncPlayAndAnalysisBoards = defaults.SyncPlayAndAnalysisBoards;
+        ShowEngineArrows = defaults.ShowEngineArrows;
         Apply();
         StatusText = "Varsayılanlara dönüldü.";
     }

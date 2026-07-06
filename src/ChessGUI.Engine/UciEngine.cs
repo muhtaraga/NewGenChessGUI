@@ -9,6 +9,10 @@ namespace ChessGUI.Engine;
 /// </summary>
 public sealed class UciEngine : IDisposable
 {
+    // Uygulama ömrü boyunca tek bir Job Object: uygulama çökse/görev yöneticisinden
+    // kapatılsa bile Windows bu joba atanmış tüm motor süreçlerini otomatik sonlandırır.
+    private static readonly JobObject SharedJob = new();
+
     private readonly object _gate = new();
     private Process? _process;
     private CancellationTokenSource? _readLoopCts;
@@ -45,6 +49,7 @@ public sealed class UciEngine : IDisposable
 
         _process = new Process { StartInfo = psi, EnableRaisingEvents = true };
         _process.Start();
+        SharedJob.Add(_process);
         _readLoopCts = new CancellationTokenSource();
         _readLoopTask = ReadLoopAsync(_process.StandardOutput, _readLoopCts.Token);
 

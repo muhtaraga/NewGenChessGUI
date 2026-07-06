@@ -81,6 +81,10 @@
                           IsChecked="{Binding SettingsVm.SyncPlayAndAnalysisBoards}"
                           Foreground="{DynamicResource ForegroundBrush}" Margin="0,0,0,8"/>
 
+                <TextBlock Text="Analiz" Style="{StaticResource SectionHeader}"/>
+                <CheckBox Content="Analizde motor önerilerini ok ile göster" IsChecked="{Binding SettingsVm.ShowEngineArrows}"
+                          Foreground="{DynamicResource ForegroundBrush}" Margin="0,0,0,8"/>
+
                 <StackPanel Orientation="Horizontal" Margin="0,20,0,0">
                     <Button Content="Kaydet" Command="{Binding SettingsVm.SaveCommand}" Width="120" Margin="0,0,8,0"/>
                     <Button Content="Varsayılanlara dön" Command="{Binding SettingsVm.ResetDefaultsCommand}" Width="150"/>

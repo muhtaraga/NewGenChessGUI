@@ -89,7 +89,9 @@
                                         AnimationEnabled="{Binding DataContext.SettingsVm.AnimationEnabled, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                         AnimationDurationMs="{Binding DataContext.SettingsVm.AnimationDurationMs, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                         LightSquare="{Binding DataContext.SettingsVm.LightSquareColor, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource HexToBrush}}"
-                                        DarkSquare="{Binding DataContext.SettingsVm.DarkSquareColor, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource HexToBrush}}"/>
+                                        DarkSquare="{Binding DataContext.SettingsVm.DarkSquareColor, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource HexToBrush}}"
+                                        ShowEngineArrows="{Binding DataContext.SettingsVm.ShowEngineArrows, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                        Arrows="{Binding DataContext.Engine.Arrows, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
             </Border>
 
             <Border Grid.Row="1" Margin="0,12,0,0" Background="{DynamicResource PanelBackground}"

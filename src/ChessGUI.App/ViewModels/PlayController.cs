@@ -208,10 +208,8 @@ public sealed partial class PlayController : ObservableObject, IDisposable
         Core.Moves.Move? move = UciMove.Parse(_board.Position, uci);
         if (move is null) { StatusText = "Motor geçersiz hamle bildirdi."; return; }
 
-        bool wasLocked = _board.InputLocked;
         _board.InputLocked = false;
         _board.TryMove(move.Value.From, move.Value.To, move.Value.IsPromotion ? move.Value.Promotion : Core.Board.PieceType.Queen);
-        _board.InputLocked = wasLocked;
     }
 
     private void OnHumanMovePlayed(object? sender, Core.Moves.Move move)
