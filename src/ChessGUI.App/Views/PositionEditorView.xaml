@@ -1,0 +1,109 @@
+<UserControl x:Class="ChessGUI.App.Views.PositionEditorView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:controls="clr-namespace:ChessGUI.App.Controls"
+             mc:Ignorable="d"
+             d:DesignHeight="700" d:DesignWidth="900">
+
+    <UserControl.Resources>
+        <Style x:Key="PaletteButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="FontSize" Value="26"/>
+            <Setter Property="Width" Value="42"/>
+            <Setter Property="Height" Value="42"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="0,0,4,0"/>
+        </Style>
+        <Style x:Key="EditorLabel" TargetType="TextBlock" BasedOn="{StaticResource MutedText}">
+            <Setter Property="Margin" Value="0,0,0,4"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Border Background="{DynamicResource PanelBackground}" BorderBrush="{DynamicResource PanelBorder}"
+            BorderThickness="1" CornerRadius="8" Padding="16">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <TextBlock Grid.Row="0" Text="POZİSYON AYARLA" Style="{StaticResource HeaderText}" FontSize="18" Margin="0,0,0,10"/>
+
+            <!-- FEN'den yükle -->
+            <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,10">
+                <TextBox Width="380" VerticalContentAlignment="Center"
+                         Text="{Binding Play.Editor.FenInput, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,8,0"/>
+                <Button Content="FEN'den yükle" Command="{Binding Play.Editor.LoadFromFenTextCommand}"/>
+            </StackPanel>
+
+            <!-- Taş paleti -->
+            <StackPanel Grid.Row="2" Margin="0,0,0,10">
+                <TextBlock Text="{Binding Play.Editor.ArmedPieceLabel}" Style="{StaticResource EditorLabel}"/>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                    <Button Content="♙" Style="{StaticResource PaletteButton}" Command="{Binding Play.Editor.SelectPaletteCommand}" CommandParameter="wP"/>
+                    <Button Content="♘" Style="{StaticResource PaletteButton}" Command="{Binding Play.Editor.SelectPaletteCommand}" CommandParameter="wN"/>
+                    <Button Content="♗" Style="{StaticResource PaletteButton}" Command="{Binding Play.Editor.SelectPaletteCommand}" CommandParameter="wB"/>
+                    <Button Content="♖" Style="{StaticResource PaletteButton}" Command="{Binding Play.Editor.SelectPaletteCommand}" CommandParameter="wR"/>
+                    <Button Content="♕" Style="{StaticResource PaletteButton}" Command="{Binding Play.Editor.SelectPaletteCommand}" CommandParameter="wQ"/>
+                    <Button Content="♔" Style="{StaticResource PaletteButton}" Command="{Binding Play.Editor.SelectPaletteCommand}" CommandParameter="wK"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <Button Content="♟" Style="{StaticResource PaletteButton}" Command="{Binding Play.Editor.SelectPaletteCommand}" CommandParameter="bP"/>
+                    <Button Content="♞" Style="{StaticResource PaletteButton}" Command="{Binding Play.Editor.SelectPaletteCommand}" CommandParameter="bN"/>
+                    <Button Content="♝" Style="{StaticResource PaletteButton}" Command="{Binding Play.Editor.SelectPaletteCommand}" CommandParameter="bB"/>
+                    <Button Content="♜" Style="{StaticResource PaletteButton}" Command="{Binding Play.Editor.SelectPaletteCommand}" CommandParameter="bR"/>
+                    <Button Content="♛" Style="{StaticResource PaletteButton}" Command="{Binding Play.Editor.SelectPaletteCommand}" CommandParameter="bQ"/>
+                    <Button Content="♚" Style="{StaticResource PaletteButton}" Command="{Binding Play.Editor.SelectPaletteCommand}" CommandParameter="bK"/>
+                </StackPanel>
+            </StackPanel>
+
+            <!-- Tahta -->
+            <Border Grid.Row="3" Background="{DynamicResource WindowBackground}" CornerRadius="6" Padding="8" MaxWidth="480">
+                <controls:BoardControl DataContext="{Binding Play.Editor}" ShowCoordinates="True"/>
+            </Border>
+
+            <!-- Sıra / rok / en passant -->
+            <StackPanel Grid.Row="4" Margin="0,12,0,10">
+                <Border Height="1" Background="{DynamicResource PanelBorder}" Margin="0,0,0,10"/>
+
+                <TextBlock Text="Sıra" Style="{StaticResource EditorLabel}"/>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                    <RadioButton Content="Beyaz oynar" GroupName="SideToMove" Margin="0,0,14,0"
+                                 IsChecked="{Binding Play.Editor.SideToMove, Converter={StaticResource ColorToBool}, ConverterParameter=White}"
+                                 Foreground="{DynamicResource ForegroundBrush}"/>
+                    <RadioButton Content="Siyah oynar" GroupName="SideToMove"
+                                 IsChecked="{Binding Play.Editor.SideToMove, Converter={StaticResource ColorToBool}, ConverterParameter=Black}"
+                                 Foreground="{DynamicResource ForegroundBrush}"/>
+                </StackPanel>
+
+                <TextBlock Text="Rok hakları" Style="{StaticResource EditorLabel}"/>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                    <CheckBox Content="Beyaz OO" IsChecked="{Binding Play.Editor.WhiteKingSide}" Margin="0,0,10,0" Foreground="{DynamicResource ForegroundBrush}"/>
+                    <CheckBox Content="Beyaz OOO" IsChecked="{Binding Play.Editor.WhiteQueenSide}" Margin="0,0,10,0" Foreground="{DynamicResource ForegroundBrush}"/>
+                    <CheckBox Content="Siyah OO" IsChecked="{Binding Play.Editor.BlackKingSide}" Margin="0,0,10,0" Foreground="{DynamicResource ForegroundBrush}"/>
+                    <CheckBox Content="Siyah OOO" IsChecked="{Binding Play.Editor.BlackQueenSide}" Foreground="{DynamicResource ForegroundBrush}"/>
+                </StackPanel>
+
+                <TextBlock Text="Geçerken alma karesi (ör. e3, veya &quot;-&quot;)" Style="{StaticResource EditorLabel}"/>
+                <TextBox Text="{Binding Play.Editor.EnPassantSquareText, UpdateSourceTrigger=PropertyChanged}" Width="90" HorizontalAlignment="Left"/>
+
+                <TextBlock Text="{Binding Play.Editor.ValidationError}" Foreground="#E0544B" FontWeight="SemiBold"
+                           TextWrapping="Wrap" Margin="0,10,0,0"
+                           Visibility="{Binding Play.Editor.ValidationError, Converter={StaticResource EmptyToCollapsed}}"/>
+            </StackPanel>
+
+            <!-- Eylem butonları -->
+            <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="Tahtayı temizle" Command="{Binding Play.Editor.ClearBoardCommand}" Margin="0,0,8,0"/>
+                <Button Content="Başlangıç pozisyonu" Command="{Binding Play.Editor.LoadStandardCommand}" Margin="0,0,8,0"/>
+                <Button Content="İptal" Command="{Binding Play.CancelPositionEditCommand}" Margin="0,0,8,0"/>
+                <Button Content="Uygula" Command="{Binding Play.ApplyPositionEditCommand}"/>
+            </StackPanel>
+        </Grid>
+    </Border>
+</UserControl>

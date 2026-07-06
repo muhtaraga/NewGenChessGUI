@@ -1,0 +1,36 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+publish/
+artifacts/
+
+# Rider / VS Code
+.idea/
+.vscode/
+
+# Test results
+[Tt]est[Rr]esult*/
+*.trx
+
+# NuGet
+*.nupkg
+packages/
+
+# App data / user chess assets (large)
+*.pgn
+*.bin
+*.rtbw
+*.rtbz
+engines/
+*.db
+*.db-shm
+*.db-wal

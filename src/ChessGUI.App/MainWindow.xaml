@@ -1,0 +1,161 @@
+<Window x:Class="ChessGUI.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:ChessGUI.App.ViewModels"
+        xmlns:views="clr-namespace:ChessGUI.App.Views"
+        mc:Ignorable="d"
+        Title="ChessGUI" Height="820" Width="1180"
+        MinHeight="600" MinWidth="960"
+        Background="{DynamicResource WindowBackground}"
+        Closed="OnWindowClosed">
+
+    <Window.InputBindings>
+        <KeyBinding Key="Left" Command="{Binding BackCommand}"/>
+        <KeyBinding Key="Right" Command="{Binding ForwardCommand}"/>
+        <KeyBinding Key="Home" Command="{Binding StartCommand}"/>
+        <KeyBinding Key="End" Command="{Binding EndCommand}"/>
+        <KeyBinding Key="F" Modifiers="Control" Command="{Binding FlipCommand}"/>
+    </Window.InputBindings>
+
+    <Window.Resources>
+        <!-- Gezinme barı sekme butonu -->
+        <Style x:Key="NavButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Margin" Value="0,0,4,0"/>
+            <Setter Property="Padding" Value="16,8"/>
+            <Setter Property="MinWidth" Value="90"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+        </Style>
+        <Style x:Key="NavButtonActive" TargetType="Button" BasedOn="{StaticResource NavButton}">
+            <Setter Property="Background" Value="{DynamicResource AccentBrush}"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Üst gezinme barı -->
+        <Border Grid.Row="0" Background="{DynamicResource PanelBackground}"
+                BorderBrush="{DynamicResource PanelBorder}" BorderThickness="0,0,0,1" Padding="14,10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                    <Button Content="♟ Oyna" Command="{Binding ShowPlayCommand}">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource NavButton}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding ActiveView}" Value="Play">
+                                        <Setter Property="Background" Value="{DynamicResource AccentBrush}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                    <Button Content="📊 Analiz" Command="{Binding ShowAnalysisCommand}">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource NavButton}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding ActiveView}" Value="Analysis">
+                                        <Setter Property="Background" Value="{DynamicResource AccentBrush}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                    <Button Content="⚙ Motorlar" Command="{Binding ShowEnginesCommand}">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource NavButton}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding ActiveView}" Value="Engines">
+                                        <Setter Property="Background" Value="{DynamicResource AccentBrush}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                    <Button Content="🛠 Ayarlar" Command="{Binding ShowSettingsCommand}">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource NavButton}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding ActiveView}" Value="Settings">
+                                        <Setter Property="Background" Value="{DynamicResource AccentBrush}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                </StackPanel>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal">
+                    <Button Content="+ Yeni oyun" Command="{Binding NewGameCommand}" Style="{StaticResource NavButton}" Margin="0,0,8,0"/>
+                    <Button Content="🗃 Veritabanı" Click="OnOpenDatabase" Style="{StaticResource NavButton}"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- İçerik: Visibility yaklaşımı — durum korunur -->
+        <Grid Grid.Row="1">
+            <views:PlayView DataContext="{Binding}">
+                <views:PlayView.Style>
+                    <Style TargetType="views:PlayView">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding ActiveView}" Value="Play">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </views:PlayView.Style>
+            </views:PlayView>
+
+            <views:AnalysisView DataContext="{Binding}">
+                <views:AnalysisView.Style>
+                    <Style TargetType="views:AnalysisView">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding ActiveView}" Value="Analysis">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </views:AnalysisView.Style>
+            </views:AnalysisView>
+
+            <views:EngineManagerView DataContext="{Binding}">
+                <views:EngineManagerView.Style>
+                    <Style TargetType="views:EngineManagerView">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding ActiveView}" Value="Engines">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </views:EngineManagerView.Style>
+            </views:EngineManagerView>
+
+            <views:SettingsView DataContext="{Binding}">
+                <views:SettingsView.Style>
+                    <Style TargetType="views:SettingsView">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding ActiveView}" Value="Settings">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </views:SettingsView.Style>
+            </views:SettingsView>
+        </Grid>
+    </Grid>
+</Window>

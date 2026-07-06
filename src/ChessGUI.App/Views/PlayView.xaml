@@ -1,0 +1,268 @@
+<UserControl x:Class="ChessGUI.App.Views.PlayView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:controls="clr-namespace:ChessGUI.App.Controls"
+             xmlns:vm="clr-namespace:ChessGUI.App.ViewModels"
+             xmlns:local="clr-namespace:ChessGUI.App.Views"
+             mc:Ignorable="d"
+             d:DesignHeight="760" d:DesignWidth="1180">
+
+    <UserControl.Resources>
+        <DataTemplate x:Key="PlayMoveTokenTemplate" DataType="{x:Type vm:MoveToken}">
+            <Border Padding="3,1" Margin="1" CornerRadius="3" Background="Transparent">
+                <TextBlock Text="{Binding Text}" FontFamily="Consolas" FontSize="13"
+                           Foreground="{DynamicResource ForegroundBrush}"/>
+            </Border>
+        </DataTemplate>
+
+        <Style TargetType="ComboBox">
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="0,0,0,10"/>
+        </Style>
+        <Style TargetType="TextBox">
+            <Setter Property="Background" Value="{DynamicResource PanelBackground}"/>
+            <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource PanelBorder}"/>
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <Style x:Key="FieldLabel" TargetType="TextBlock" BasedOn="{StaticResource MutedText}">
+            <Setter Property="Margin" Value="0,0,0,4"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid Margin="14">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="300"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Orta: tahta + saatler -->
+            <Grid Grid.Column="0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Üst oyuncu (tahtanın üstündeki taraf) -->
+                <Border Grid.Row="0" Background="{DynamicResource PanelBackground}" CornerRadius="8"
+                        Padding="14,8" Margin="0,0,0,10">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="{Binding Play.BlackPlayerName}" FontWeight="SemiBold"
+                                   VerticalAlignment="Center"/>
+                        <Border Grid.Column="1" Background="#1B1B1F" CornerRadius="6" Padding="12,6" Margin="0,0,10,0">
+                            <TextBlock Text="{Binding Play.Clock.BlackClockText}" FontFamily="Consolas" FontSize="20"
+                                       Foreground="{DynamicResource AccentBrush}" FontWeight="Bold"/>
+                        </Border>
+                        <Button Grid.Column="2" Content="⇅ Çevir" Command="{Binding Play.FlipCommand}" Padding="10,6"/>
+                    </Grid>
+                </Border>
+
+                <Border Grid.Row="1" Background="{DynamicResource PanelBackground}" CornerRadius="8" Padding="10">
+                    <controls:BoardControl DataContext="{Binding PlayBoard}"
+                                            ShowCoordinates="{Binding DataContext.SettingsVm.ShowCoordinates, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            PieceScale="{Binding DataContext.SettingsVm.PieceScale, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            AnimationEnabled="{Binding DataContext.SettingsVm.AnimationEnabled, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            AnimationDurationMs="{Binding DataContext.SettingsVm.AnimationDurationMs, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            LightSquare="{Binding DataContext.SettingsVm.LightSquareColor, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource HexToBrush}}"
+                                            DarkSquare="{Binding DataContext.SettingsVm.DarkSquareColor, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource HexToBrush}}"/>
+                </Border>
+
+                <!-- Alt oyuncu (tahtanın altındaki taraf) -->
+                <Border Grid.Row="2" Background="{DynamicResource PanelBackground}" CornerRadius="8"
+                        Padding="14,8" Margin="0,10,0,0">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="{Binding Play.WhitePlayerName}" FontWeight="SemiBold"
+                                   VerticalAlignment="Center"/>
+                        <Border Grid.Column="1" Background="#1B1B1F" CornerRadius="6" Padding="12,6">
+                            <TextBlock Text="{Binding Play.Clock.WhiteClockText}" FontFamily="Consolas" FontSize="20"
+                                       Foreground="{DynamicResource AccentBrush}" FontWeight="Bold"/>
+                        </Border>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <!-- Sağ panel: kurulum (IsSetup=True) veya hamle listesi + durum + butonlar (IsSetup=False) -->
+            <Border Grid.Column="1" Margin="14,0,0,0" Background="{DynamicResource PanelBackground}"
+                    BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1" CornerRadius="8" Padding="16">
+                <Grid>
+                    <!-- Kurulum paneli -->
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Play.IsSetup}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+
+                            <TextBlock Text="OYUN KUR" Style="{StaticResource HeaderText}" FontSize="18" Margin="0,0,0,14"/>
+
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="10"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="Beyaz" Style="{StaticResource FieldLabel}"/>
+                                    <ComboBox ItemsSource="{Binding Setup.PlayerOptions}" SelectedItem="{Binding Setup.WhiteOption}"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="Siyah" Style="{StaticResource FieldLabel}"/>
+                                    <ComboBox ItemsSource="{Binding Setup.PlayerOptions}" SelectedItem="{Binding Setup.BlackOption}"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <CheckBox Content="Farklı süreler" IsChecked="{Binding Setup.UseDifferentTimes}" Margin="0,0,0,10"
+                                      Foreground="{DynamicResource ForegroundBrush}"/>
+
+                            <!-- Paylaşımlı süre (preset veya özel) -->
+                            <StackPanel>
+                                <StackPanel.Style>
+                                    <Style TargetType="StackPanel">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Setup.UseDifferentTimes}" Value="True">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </StackPanel.Style>
+                                <TextBlock Text="Süre kontrolü" Style="{StaticResource FieldLabel}"/>
+                                <ComboBox ItemsSource="{Binding Setup.Presets}" SelectedItem="{Binding Setup.SelectedPreset}"
+                                          IsEnabled="{Binding Setup.IsCustom, Converter={StaticResource InverseBool}}"/>
+
+                                <CheckBox Content="Özel süre" IsChecked="{Binding Setup.IsCustom}" Margin="0,0,0,10"
+                                          Foreground="{DynamicResource ForegroundBrush}"/>
+
+                                <Grid Margin="0,0,0,14" IsEnabled="{Binding Setup.IsCustom}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="10"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="Dakika" Style="{StaticResource FieldLabel}"/>
+                                        <TextBox Text="{Binding Setup.CustomMinutes}"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="Artırım (sn)" Style="{StaticResource FieldLabel}"/>
+                                        <TextBox Text="{Binding Setup.CustomIncrement}"/>
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+
+                            <!-- Renk başına ayrı süre -->
+                            <StackPanel Visibility="{Binding Setup.UseDifferentTimes, Converter={StaticResource BoolToVis}}" Margin="0,0,0,14">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="10"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="Beyaz — Dakika" Style="{StaticResource FieldLabel}"/>
+                                        <TextBox Text="{Binding Setup.WhiteCustomMinutes}" Margin="0,0,0,8"/>
+                                        <TextBlock Text="Beyaz — Artırım (sn)" Style="{StaticResource FieldLabel}"/>
+                                        <TextBox Text="{Binding Setup.WhiteCustomIncrement}"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="Siyah — Dakika" Style="{StaticResource FieldLabel}"/>
+                                        <TextBox Text="{Binding Setup.BlackCustomMinutes}" Margin="0,0,0,8"/>
+                                        <TextBlock Text="Siyah — Artırım (sn)" Style="{StaticResource FieldLabel}"/>
+                                        <TextBox Text="{Binding Setup.BlackCustomIncrement}"/>
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+
+                            <Button Content="Pozisyon Ayarla" Command="{Binding Play.OpenPositionEditorCommand}" Margin="0,0,0,8"/>
+                            <TextBlock Text="Özel pozisyon ayarlandı" Style="{StaticResource MutedText}"
+                                       Foreground="{DynamicResource AccentBrush}" Margin="0,0,0,8"
+                                       Visibility="{Binding Play.HasPendingCustomPosition, Converter={StaticResource BoolToVis}}"/>
+
+                            <Button Content="Başlat" Command="{Binding Setup.StartCommand}"/>
+                            <TextBlock Text="Bilgisayar seçmek için önce Motorlar sekmesinden bir motor ekleyin."
+                                       Style="{StaticResource MutedText}" TextWrapping="Wrap" Margin="0,6,0,0"/>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <!-- Oyun paneli -->
+                    <Grid>
+                        <Grid.Style>
+                            <Style TargetType="Grid">
+                                <Setter Property="Visibility" Value="Visible"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Play.IsSetup}" Value="True">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Grid.Style>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <StackPanel Grid.Row="0">
+                            <TextBlock Text="OYUN" Style="{StaticResource HeaderText}" FontSize="18"/>
+                            <TextBlock Text="{Binding Play.ResultText}" FontSize="16" FontWeight="Bold"
+                                       Foreground="{DynamicResource AccentBrush}" Margin="0,8,0,0"/>
+                            <TextBlock Text="{Binding Play.StatusText}" Style="{StaticResource MutedText}" Margin="0,4,0,10"/>
+                            <Border Height="1" Background="{DynamicResource PanelBorder}" Margin="0,0,0,10"/>
+                        </StackPanel>
+
+                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                            <ItemsControl ItemsSource="{Binding PlayMoveList.Tokens}"
+                                          ItemTemplate="{StaticResource PlayMoveTokenTemplate}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                            </ItemsControl>
+                        </ScrollViewer>
+
+                        <Border Grid.Row="2" Height="1" Background="{DynamicResource PanelBorder}" Margin="0,10,0,10"/>
+
+                        <StackPanel Grid.Row="3">
+                            <Button Content="Yeni oyun" Command="{Binding NewGameCommand}"/>
+                            <Button Content="Terk et" Command="{Binding Play.ResignCommand}"
+                                    IsEnabled="{Binding Play.IsGameActive}"/>
+                            <Button Content="Beraberlik teklif et" Command="{Binding Play.OfferDrawCommand}"
+                                    IsEnabled="{Binding Play.IsGameActive}"/>
+                            <Button Content="Durdur" Command="{Binding Play.StopCommand}"
+                                    IsEnabled="{Binding Play.IsGameActive}"/>
+                            <Button Content="Analize aktar →" Command="{Binding Play.SwitchToAnalysisCommand}" Margin="0"/>
+                        </StackPanel>
+                    </Grid>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- Pozisyon editörü katmanı -->
+        <Grid Background="#CC0B0B0D" Visibility="{Binding Play.IsEditingPosition, Converter={StaticResource BoolToVis}}">
+            <local:PositionEditorView Margin="60" MaxWidth="640" HorizontalAlignment="Center"/>
+        </Grid>
+    </Grid>
+</UserControl>

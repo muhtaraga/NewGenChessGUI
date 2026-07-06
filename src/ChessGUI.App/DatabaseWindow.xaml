@@ -1,0 +1,153 @@
+<Window x:Class="ChessGUI.App.DatabaseWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Oyun Veritabanı" Height="640" Width="1000"
+        Background="{DynamicResource WindowBackground}"
+        WindowStartupLocation="CenterOwner">
+
+    <Window.Resources>
+        <!-- Koyu temaya uygun giriş kontrolleri -->
+        <Style TargetType="TextBox">
+            <Setter Property="Background" Value="{DynamicResource PanelBackground}"/>
+            <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource PanelBorder}"/>
+            <Setter Property="CaretBrush" Value="{DynamicResource ForegroundBrush}"/>
+            <Setter Property="Padding" Value="4,3"/>
+            <Setter Property="Height" Value="26"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <Style TargetType="ComboBox">
+            <Setter Property="Height" Value="26"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <Style x:Key="FieldLabel" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource MutedForeground}"/>
+            <Setter Property="Margin" Value="0,0,6,2"/>
+            <Setter Property="FontSize" Value="11"/>
+        </Style>
+        <Style TargetType="DataGrid">
+            <Setter Property="Background" Value="{DynamicResource PanelBackground}"/>
+            <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource PanelBorder}"/>
+            <Setter Property="RowBackground" Value="#26262B"/>
+            <Setter Property="AlternatingRowBackground" Value="#2C2C32"/>
+            <Setter Property="GridLinesVisibility" Value="Horizontal"/>
+            <Setter Property="HorizontalGridLinesBrush" Value="#33333A"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="RowHeaderWidth" Value="0"/>
+        </Style>
+        <Style TargetType="DataGridColumnHeader">
+            <Setter Property="Background" Value="#30303A"/>
+            <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
+            <Setter Property="Padding" Value="8,5"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource PanelBorder}"/>
+            <Setter Property="BorderThickness" Value="0,0,1,1"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style TargetType="DataGridCell">
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="6,3"/>
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource AccentBrush}"/>
+                    <Setter Property="Foreground" Value="White"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Üst: veritabanı yolu + eylemler -->
+        <DockPanel Grid.Row="0" Margin="0,0,0,10">
+            <Button Content="Yeni…" Command="{Binding NewDatabaseCommand}" DockPanel.Dock="Left" Margin="0,0,6,0"/>
+            <Button Content="Aç…" Command="{Binding OpenDatabaseCommand}" DockPanel.Dock="Left" Margin="0,0,6,0"/>
+            <Button Content="PGN Aktar…" Command="{Binding ImportPgnCommand}" DockPanel.Dock="Left" Margin="0,0,12,0"/>
+            <TextBlock Text="{Binding ImportStatus}" DockPanel.Dock="Right" VerticalAlignment="Center"
+                       Foreground="{DynamicResource AccentBrush}" Margin="12,0,0,0"/>
+            <TextBlock Text="{Binding DatabasePath}" VerticalAlignment="Center"
+                       Foreground="{DynamicResource MutedForeground}" TextTrimming="CharacterEllipsis"/>
+        </DockPanel>
+
+        <!-- Filtreler -->
+        <Grid Grid.Row="1" Margin="0,0,0,10" IsEnabled="{Binding IsOpen}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="90"/>
+                <ColumnDefinition Width="110"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,6,0">
+                <TextBlock Text="Oyuncu (her renk)" Style="{StaticResource FieldLabel}"/>
+                <TextBox Text="{Binding FilterPlayer, UpdateSourceTrigger=PropertyChanged}"/>
+            </StackPanel>
+            <StackPanel Grid.Row="0" Grid.Column="1" Margin="0,0,6,0">
+                <TextBlock Text="Beyaz" Style="{StaticResource FieldLabel}"/>
+                <TextBox Text="{Binding FilterWhite, UpdateSourceTrigger=PropertyChanged}"/>
+            </StackPanel>
+            <StackPanel Grid.Row="0" Grid.Column="2" Margin="0,0,6,0">
+                <TextBlock Text="Siyah" Style="{StaticResource FieldLabel}"/>
+                <TextBox Text="{Binding FilterBlack, UpdateSourceTrigger=PropertyChanged}"/>
+            </StackPanel>
+            <StackPanel Grid.Row="0" Grid.Column="3" Margin="0,0,6,0">
+                <TextBlock Text="Etkinlik" Style="{StaticResource FieldLabel}"/>
+                <TextBox Text="{Binding FilterEvent, UpdateSourceTrigger=PropertyChanged}"/>
+            </StackPanel>
+            <StackPanel Grid.Row="0" Grid.Column="4" Margin="0,0,6,0">
+                <TextBlock Text="ECO" Style="{StaticResource FieldLabel}"/>
+                <TextBox Text="{Binding FilterEco, UpdateSourceTrigger=PropertyChanged}"/>
+            </StackPanel>
+            <StackPanel Grid.Row="0" Grid.Column="5" Margin="0,0,6,0">
+                <TextBlock Text="Sonuç" Style="{StaticResource FieldLabel}"/>
+                <ComboBox ItemsSource="{Binding ResultOptions}" SelectedItem="{Binding FilterResult}"/>
+            </StackPanel>
+
+            <StackPanel Grid.Row="0" Grid.Column="6" Orientation="Horizontal" VerticalAlignment="Bottom">
+                <Button Content="Ara" Command="{Binding SearchCommand}" Width="60" Margin="0,0,6,0"/>
+                <Button Content="Pozisyon Ara" Command="{Binding SearchPositionCommand}" Margin="0,0,6,0"
+                        ToolTip="Ana penceredeki tahtada duran pozisyonu içeren oyunları bul"/>
+                <Button Content="Temizle" Command="{Binding ClearFiltersCommand}"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- Sonuç listesi -->
+        <DataGrid Grid.Row="2" ItemsSource="{Binding Results}" SelectedItem="{Binding SelectedGame}"
+                  AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single"
+                  HeadersVisibility="Column" CanUserResizeRows="False"
+                  MouseDoubleClick="OnGridDoubleClick">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Beyaz" Binding="{Binding White}" Width="160"/>
+                <DataGridTextColumn Header="Elo" Binding="{Binding WhiteElo}" Width="55"/>
+                <DataGridTextColumn Header="Siyah" Binding="{Binding Black}" Width="160"/>
+                <DataGridTextColumn Header="Elo" Binding="{Binding BlackElo}" Width="55"/>
+                <DataGridTextColumn Header="Sonuç" Binding="{Binding Result}" Width="70"/>
+                <DataGridTextColumn Header="Tarih" Binding="{Binding Date}" Width="90"/>
+                <DataGridTextColumn Header="ECO" Binding="{Binding Eco}" Width="55"/>
+                <DataGridTextColumn Header="Hamle" Binding="{Binding MovesText}" Width="70"/>
+                <DataGridTextColumn Header="Etkinlik" Binding="{Binding Event}" Width="*"/>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <!-- Alt: durum + aç -->
+        <DockPanel Grid.Row="3" Margin="0,10,0,0">
+            <Button Content="Oyunu Aç →" Command="{Binding OpenSelectedGameCommand}"
+                    DockPanel.Dock="Right" MinWidth="110"/>
+            <TextBlock Text="{Binding StatusText}" VerticalAlignment="Center"
+                       Foreground="{DynamicResource MutedForeground}"/>
+        </DockPanel>
+    </Grid>
+</Window>

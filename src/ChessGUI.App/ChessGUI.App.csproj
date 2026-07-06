@@ -1,0 +1,34 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\ChessGUI.Core\ChessGUI.Core.csproj" />
+    <ProjectReference Include="..\ChessGUI.Engine\ChessGUI.Engine.csproj" />
+    <ProjectReference Include="..\ChessGUI.Data\ChessGUI.Data.csproj" />
+    <ProjectReference Include="..\ChessGUI.Openings\ChessGUI.Openings.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Assets\Sounds\*.wav">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Yalnızca Syzygy klasör seçici için (FolderBrowserDialog); UseWindowsForms açmıyoruz
+         çünkü WPF ile paylaşılan Brush/Point/Color gibi tip adlarında belirsizlik yaratır. -->
+    <FrameworkReference Include="Microsoft.WindowsDesktop.App.WindowsForms" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+
+</Project>

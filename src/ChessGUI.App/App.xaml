@@ -1,0 +1,19 @@
+<Application x:Class="ChessGUI.App.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:ChessGUI.App"
+             xmlns:conv="clr-namespace:ChessGUI.App.Converters">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Themes/Dark.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <conv:InverseBooleanConverter x:Key="InverseBool"/>
+            <conv:HexToBrushConverter x:Key="HexToBrush"/>
+            <conv:EmptyToVisibilityConverter x:Key="EmptyToCollapsed"/>
+            <conv:ColorToBoolConverter x:Key="ColorToBool"/>
+            <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>
