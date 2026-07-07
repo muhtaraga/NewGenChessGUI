@@ -90,6 +90,7 @@ public sealed partial class DatabaseViewModel : ObservableObject, IDisposable
             SearchCommand.NotifyCanExecuteChanged();
             ImportPgnCommand.NotifyCanExecuteChanged();
             SearchPositionCommand.NotifyCanExecuteChanged();
+            SaveCurrentGameCommand.NotifyCanExecuteChanged();
             RepositoryChanged?.Invoke();
         }
         catch (Exception ex)
@@ -105,6 +106,7 @@ public sealed partial class DatabaseViewModel : ObservableObject, IDisposable
             SearchCommand.NotifyCanExecuteChanged();
             ImportPgnCommand.NotifyCanExecuteChanged();
             SearchPositionCommand.NotifyCanExecuteChanged();
+            SaveCurrentGameCommand.NotifyCanExecuteChanged();
             RepositoryChanged?.Invoke();
         }
     }
@@ -165,6 +167,35 @@ public sealed partial class DatabaseViewModel : ObservableObject, IDisposable
             ImportStatus = "";
             ImportPgnCommand.NotifyCanExecuteChanged();
             SearchCommand.NotifyCanExecuteChanged();
+        }
+    }
+
+    [RelayCommand(CanExecute = nameof(CanUseDb))]
+    private void SaveCurrentGame()
+    {
+        ChessDatabase db = _db!;
+        string pgn = _board.ExportPgn();
+
+        try
+        {
+            using var reader = new StringReader(pgn);
+            var importer = new PgnImporter(db);
+            ImportResult result = importer.Import(reader, new ImportOptions());
+
+            if (result.GamesImported > 0)
+            {
+                StatusText = "Oyun veritabanına eklendi.";
+                RefreshStats();
+                RepositoryChanged?.Invoke(); // kitap panosu yeni oyunla güncellensin
+            }
+            else
+            {
+                StatusText = "Kaydedilecek hamle yok.";
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusText = $"Kaydetme hatası: {ex.Message}";
         }
     }
 
