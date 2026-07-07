@@ -43,3 +43,7 @@ installer/Output/
 
 # Tanıtım sitesi (GitHub'da gözükmesin, sadece yerel olarak barındırılıyor)
 website/
+
+# Yayınlama otomasyon scriptleri (GitHub'da gözükmesin, sadece yerel olarak kullanılıyor)
+installer/release.ps1
+installer/build-installer.ps1
