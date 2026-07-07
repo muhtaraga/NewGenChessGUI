@@ -17,6 +17,9 @@ artifacts/
 .idea/
 .vscode/
 
+# Claude Code yerel yapılandırması
+.claude/
+
 # Test results
 [Tt]est[Rr]esult*/
 *.trx

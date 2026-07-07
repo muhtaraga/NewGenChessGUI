@@ -4,7 +4,7 @@
 ; "ISCC.exe ChessGUI.iss" calistirin.
 
 #define MyAppName "ChessGUI"
-#define MyAppVersion "1.0.1"
+#define MyAppVersion "1.0.2"
 #define MyAppPublisher "ChessGUI"
 #define MyAppURL "https://github.com/muhtaraga/NewGenChessGUI"
 #define MyAppExeName "ChessGUI.exe"

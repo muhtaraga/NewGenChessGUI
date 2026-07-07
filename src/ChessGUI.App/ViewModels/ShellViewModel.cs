@@ -53,7 +53,7 @@ public sealed partial class ShellViewModel : ObservableObject, IDisposable
     [ObservableProperty] private string _fen = "";
     [ObservableProperty] private string _openingText = "";
 
-    public ShellViewModel(EngineRegistry engineRegistry, SettingsService settings, SoundService sound, ThemeService theme)
+    public ShellViewModel(EngineRegistry engineRegistry, SettingsService settings, SoundService sound, ThemeService theme, UpdateCheckService updateService)
     {
         EngineRegistry = engineRegistry;
         Settings = settings;
@@ -69,7 +69,7 @@ public sealed partial class ShellViewModel : ObservableObject, IDisposable
         Book = new BookViewModel(Board, Database);
         Play = new PlayController(PlayBoard, sound, settings);
         EngineManager = new EngineManagerViewModel(engineRegistry);
-        SettingsVm = new SettingsViewModel(settings, theme);
+        SettingsVm = new SettingsViewModel(settings, theme, updateService);
         Setup = new GameSetupViewModel(engineRegistry);
 
         Play.RequestSwitchToAnalysis += (_, _) => { TransferPlayToAnalysis(); ActiveView = ShellView.Analysis; };

@@ -22,8 +22,9 @@ public partial class App : Application
         var soundService = new SoundService(settingsService);
         var themeService = new ThemeService();
         themeService.Apply(settingsService.Current.Theme);
+        var updateService = new UpdateCheckService();
 
-        _shell = new ShellViewModel(engineRegistry, settingsService, soundService, themeService);
+        _shell = new ShellViewModel(engineRegistry, settingsService, soundService, themeService, updateService);
 
         var window = new MainWindow { DataContext = _shell };
         MainWindow = window;

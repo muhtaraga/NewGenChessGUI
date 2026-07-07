@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ChessGUI.App.Models;
@@ -14,6 +15,10 @@ public sealed partial class SettingsViewModel : ObservableObject
 {
     private readonly SettingsService _service;
     private readonly ThemeService _themeService;
+    private readonly UpdateCheckService _updateService;
+    private string? _pendingDownloadUrl;
+    private string? _pendingReleaseUrl;
+    private string _pendingLatestVersion = "";
 
     [ObservableProperty] private string _theme;
     [ObservableProperty] private string _lightSquareColor;
@@ -29,13 +34,20 @@ public sealed partial class SettingsViewModel : ObservableObject
     [ObservableProperty] private bool _showEngineArrows;
     [ObservableProperty] private string _statusText = "";
 
+    [ObservableProperty] private bool _isCheckingForUpdates;
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(InstallUpdateCommand))]
+    private bool _isUpdateAvailable;
+    [ObservableProperty] private string _updateStatusText = "";
+
     /// <summary>Ayar değiştikçe canlı uygulanması için (BoardControl binding'i dinler).</summary>
     public event EventHandler? LiveChanged;
 
-    public SettingsViewModel(SettingsService service, ThemeService themeService)
+    public SettingsViewModel(SettingsService service, ThemeService themeService, UpdateCheckService updateService)
     {
         _service = service;
         _themeService = themeService;
+        _updateService = updateService;
         AppSettings s = service.Current;
 
         _theme = s.Theme;
@@ -114,5 +126,67 @@ public sealed partial class SettingsViewModel : ObservableObject
         ShowEngineArrows = defaults.ShowEngineArrows;
         Apply();
         StatusText = "Varsayılanlara dönüldü.";
+    }
+
+    [RelayCommand]
+    private async Task CheckForUpdatesAsync()
+    {
+        IsCheckingForUpdates = true;
+        UpdateStatusText = "Denetleniyor...";
+        try
+        {
+            UpdateCheckResult result = await _updateService.CheckForUpdateAsync();
+            if (result.ErrorMessage is not null)
+            {
+                IsUpdateAvailable = false;
+                UpdateStatusText = $"Denetlenemedi: {result.ErrorMessage}";
+            }
+            else if (result.IsUpdateAvailable)
+            {
+                _pendingDownloadUrl = result.DownloadUrl;
+                _pendingReleaseUrl = result.ReleaseUrl;
+                _pendingLatestVersion = result.LatestVersion;
+                IsUpdateAvailable = true;
+                UpdateStatusText = $"Yeni sürüm mevcut: v{result.LatestVersion}";
+            }
+            else
+            {
+                IsUpdateAvailable = false;
+                UpdateStatusText = $"En güncel sürümü kullanıyorsunuz (v{result.CurrentVersion}).";
+            }
+        }
+        finally
+        {
+            IsCheckingForUpdates = false;
+        }
+    }
+
+    [RelayCommand(CanExecute = nameof(IsUpdateAvailable))]
+    private async Task InstallUpdateAsync()
+    {
+        if (_pendingDownloadUrl is null)
+        {
+            if (_pendingReleaseUrl is not null)
+            {
+                Process.Start(new ProcessStartInfo(_pendingReleaseUrl) { UseShellExecute = true });
+            }
+            return;
+        }
+
+        try
+        {
+            UpdateStatusText = "İndiriliyor...";
+            string installerPath = await _updateService.DownloadInstallerAsync(_pendingDownloadUrl, _pendingLatestVersion);
+
+            UpdateStatusText = "Güncelleniyor, uygulama kısa süre sonra yeniden başlayacak...";
+            Process.Start(new ProcessStartInfo(installerPath, "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /RESTARTAPPLICATIONS")
+            {
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex)
+        {
+            UpdateStatusText = $"Güncelleme başlatılamadı: {ex.Message}";
+        }
     }
 }
