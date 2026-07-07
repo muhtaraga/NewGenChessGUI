@@ -65,7 +65,7 @@ public sealed partial class ShellViewModel : ObservableObject, IDisposable
         MoveList = new MoveListViewModel(Board);
         PlayMoveList = new MoveListViewModel(PlayBoard);
         Report = new GameReportViewModel(Board, Engine);
-        Database = new DatabaseViewModel(Board);
+        Database = new DatabaseViewModel(Board, settings);
         Book = new BookViewModel(Board, Database);
         Play = new PlayController(PlayBoard, sound, settings);
         EngineManager = new EngineManagerViewModel(engineRegistry);

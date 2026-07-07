@@ -86,12 +86,17 @@ public sealed class GameTree
         node.Parent?.Children.Remove(node);
     }
 
-    /// <summary>Bir varyantı ana hat yapar (ebeveynin çocuk listesinde başa alır).</summary>
+    /// <summary>Düğümden köke kadar yürüyerek bu hattı (ve içindeki her ata düğümü) ana hat yapar.</summary>
     public static void PromoteToMainLine(GameNode node)
     {
-        var parent = node.Parent;
-        if (parent == null) return;
-        parent.Children.Remove(node);
-        parent.Children.Insert(0, node);
+        for (GameNode? n = node; n?.Parent != null; n = n.Parent)
+        {
+            List<GameNode> siblings = n.Parent.Children;
+            if (siblings[0] != n)
+            {
+                siblings.Remove(n);
+                siblings.Insert(0, n);
+            }
+        }
     }
 }

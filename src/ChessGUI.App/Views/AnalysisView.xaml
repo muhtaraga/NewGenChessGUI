@@ -17,9 +17,22 @@
             <Setter Property="MinWidth" Value="36"/>
         </Style>
 
+        <!-- Varyant sağ tık menüsü (yalnız yan dal hamlelerinde açılır) -->
+        <ContextMenu x:Key="VariationContextMenu"
+                     DataContext="{Binding PlacementTarget.Tag, RelativeSource={RelativeSource Self}}">
+            <MenuItem Header="Ana hat yap"
+                      Command="{Binding PromoteVariationCommand}"
+                      CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+            <MenuItem Header="Varyantı sil"
+                      Command="{Binding DeleteVariationCommand}"
+                      CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+        </ContextMenu>
+
         <!-- Hamle listesi jetonu -->
         <DataTemplate x:Key="MoveTokenTemplate" DataType="{x:Type vm:MoveToken}">
-            <Border x:Name="bd" Padding="3,1" Margin="1" CornerRadius="3" Background="Transparent" Cursor="Hand">
+            <Border x:Name="bd" Padding="3,1" Margin="1" CornerRadius="3" Background="Transparent" Cursor="Hand"
+                    Tag="{Binding DataContext.MoveList, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                    ContextMenu="{StaticResource VariationContextMenu}">
                 <Border.InputBindings>
                     <MouseBinding MouseAction="LeftClick"
                                   Command="{Binding DataContext.MoveList.NavigateCommand,
@@ -33,6 +46,10 @@
                 <DataTrigger Binding="{Binding IsMove}" Value="False">
                     <Setter TargetName="txt" Property="Foreground" Value="{DynamicResource MutedForeground}"/>
                     <Setter TargetName="bd" Property="Cursor" Value="Arrow"/>
+                    <Setter TargetName="bd" Property="ContextMenu" Value="{x:Null}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Depth}" Value="0">
+                    <Setter TargetName="bd" Property="ContextMenu" Value="{x:Null}"/>
                 </DataTrigger>
                 <DataTrigger Binding="{Binding Depth}" Value="1">
                     <Setter TargetName="txt" Property="Foreground" Value="#A6B39A"/>
@@ -173,15 +190,15 @@
 
                 <!-- Araç çubukları -->
                 <StackPanel Grid.Row="1">
-                    <StackPanel Orientation="Horizontal">
-                        <Button Content="Aç" Command="{Binding OpenPgnCommand}" Style="{StaticResource ToolButton}"/>
-                        <Button Content="Kaydet" Command="{Binding SavePgnCommand}" Style="{StaticResource ToolButton}"/>
-                        <Button Content="Yapıştır" Command="{Binding PastePgnCommand}" Style="{StaticResource ToolButton}"/>
-                        <Button Content="Kopyala" Command="{Binding CopyPgnCommand}" Style="{StaticResource ToolButton}"/>
+                    <WrapPanel>
+                        <Button Content="Aç" Command="{Binding OpenPgnCommand}" Style="{StaticResource ToolButton}" Margin="0,0,6,6"/>
+                        <Button Content="Kaydet" Command="{Binding SavePgnCommand}" Style="{StaticResource ToolButton}" Margin="0,0,6,6"/>
+                        <Button Content="Yapıştır" Command="{Binding PastePgnCommand}" Style="{StaticResource ToolButton}" Margin="0,0,6,6"/>
+                        <Button Content="Kopyala" Command="{Binding CopyPgnCommand}" Style="{StaticResource ToolButton}" Margin="0,0,6,6"/>
                         <Button Content="DB'ye ekle" Command="{Binding Database.SaveCurrentGameCommand}"
-                                Style="{StaticResource ToolButton}"
+                                Style="{StaticResource ToolButton}" Margin="0,0,6,6"
                                 ToolTip="Mevcut oyunu açık veritabanına ekler. Önce bir veritabanı açın."/>
-                    </StackPanel>
+                    </WrapPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
                         <Button Content="⏮" Command="{Binding StartCommand}" Style="{StaticResource ToolButton}"/>
                         <Button Content="◀" Command="{Binding BackCommand}" Style="{StaticResource ToolButton}"/>

@@ -35,4 +35,7 @@ public sealed class AppSettings
     // --- Analiz -------------------------------------------------------------
     public bool ShowEngineArrows { get; set; } = true;
     public int MultiPv { get; set; } = 3;
+
+    // --- Veritabanı -----------------------------------------------------------
+    public string? LastDatabasePath { get; set; }
 }

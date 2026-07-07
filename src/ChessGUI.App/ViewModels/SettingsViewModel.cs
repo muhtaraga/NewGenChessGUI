@@ -96,16 +96,9 @@ public sealed partial class SettingsViewModel : ObservableObject
         s.AutoFlipBoard = AutoFlipBoard;
         s.SyncPlayAndAnalysisBoards = SyncPlayAndAnalysisBoards;
         s.ShowEngineArrows = ShowEngineArrows;
+        _service.Save();
 
         LiveChanged?.Invoke(this, EventArgs.Empty);
-    }
-
-    [RelayCommand]
-    private void Save()
-    {
-        Apply();
-        _service.Save();
-        StatusText = "Ayarlar kaydedildi.";
     }
 
     [RelayCommand]

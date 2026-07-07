@@ -8,6 +8,7 @@ using ChessGUI.Data;
 using ChessGUI.Data.Entities;
 using ChessGUI.Data.Import;
 using ChessGUI.Data.Repositories;
+using ChessGUI.App.Services;
 
 namespace ChessGUI.App.ViewModels;
 
@@ -19,6 +20,7 @@ namespace ChessGUI.App.ViewModels;
 public sealed partial class DatabaseViewModel : ObservableObject, IDisposable
 {
     private readonly BoardViewModel _board;
+    private readonly SettingsService _settings;
     private ChessDatabase? _db;
     private GameRepository? _repo;
     private BookRepository? _bookRepo;
@@ -51,7 +53,14 @@ public sealed partial class DatabaseViewModel : ObservableObject, IDisposable
     /// <summary>Bir oyun tahtaya yüklendiğinde tetiklenir (pencere kapatmak için).</summary>
     public event Action? GameOpened;
 
-    public DatabaseViewModel(BoardViewModel board) => _board = board;
+    public DatabaseViewModel(BoardViewModel board, SettingsService settings)
+    {
+        _board = board;
+        _settings = settings;
+
+        string? last = settings.Current.LastDatabasePath;
+        if (!string.IsNullOrWhiteSpace(last) && File.Exists(last)) OpenPath(last);
+    }
 
     // --- Veritabanı açma / oluşturma ---------------------------------------
 
@@ -85,8 +94,10 @@ public sealed partial class DatabaseViewModel : ObservableObject, IDisposable
             _bookRepo = new BookRepository(_db);
             DatabasePath = path;
             IsOpen = true;
-            Results.Clear();
-            RefreshStats();
+            _settings.Current.LastDatabasePath = path;
+            _settings.Save();
+            FilterPlayer = FilterWhite = FilterBlack = FilterEvent = FilterEco = FilterResult = "";
+            RunSearch(BuildQuery());
             SearchCommand.NotifyCanExecuteChanged();
             ImportPgnCommand.NotifyCanExecuteChanged();
             SearchPositionCommand.NotifyCanExecuteChanged();
@@ -103,6 +114,8 @@ public sealed partial class DatabaseViewModel : ObservableObject, IDisposable
             _bookRepo = null;
             IsOpen = false;
             StatusText = $"Açılamadı: {ex.Message}";
+            _settings.Current.LastDatabasePath = null;
+            _settings.Save();
             SearchCommand.NotifyCanExecuteChanged();
             ImportPgnCommand.NotifyCanExecuteChanged();
             SearchPositionCommand.NotifyCanExecuteChanged();

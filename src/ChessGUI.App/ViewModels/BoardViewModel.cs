@@ -105,6 +105,31 @@ public sealed class BoardViewModel : IBoardInteraction
         GoTo(parent);
     }
 
+    /// <summary>Belirtilen düğümü (ve alt ağacını) siler. Geçerli konum bu düğümün altındaysa ebeveyne döner.</summary>
+    public void DeleteNode(GameNode node)
+    {
+        if (node.IsRoot) return;
+        bool affectsCurrent = IsAncestorOrSelf(node, _current);
+        GameTree.Remove(node);
+        if (affectsCurrent) GoTo(node.Parent!);
+        else RaiseChanged();
+    }
+
+    /// <summary>Düğümün hattını kökten itibaren ana hat yapar.</summary>
+    public void PromoteNode(GameNode node)
+    {
+        if (node.IsRoot) return;
+        GameTree.PromoteToMainLine(node);
+        RaiseChanged();
+    }
+
+    private static bool IsAncestorOrSelf(GameNode ancestor, GameNode node)
+    {
+        for (GameNode? n = node; n != null; n = n.Parent)
+            if (n == ancestor) return true;
+        return false;
+    }
+
     // --- Oyun / PGN ---------------------------------------------------------
 
     public void NewGame() => LoadGame(new GameTree());

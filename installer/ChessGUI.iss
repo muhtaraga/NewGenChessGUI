@@ -4,7 +4,7 @@
 ; "ISCC.exe ChessGUI.iss" calistirin.
 
 #define MyAppName "ChessGUI"
-#define MyAppVersion "1.0.3"
+#define MyAppVersion "1.0.4"
 #define MyAppPublisher "ChessGUI"
 #define MyAppURL "https://github.com/muhtaraga/NewGenChessGUI"
 #define MyAppExeName "ChessGUI.exe"
@@ -55,3 +55,4 @@ Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#MyAppName}}
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}"
+Type: filesandordirs; Name: "{userappdata}\ChessGUI"

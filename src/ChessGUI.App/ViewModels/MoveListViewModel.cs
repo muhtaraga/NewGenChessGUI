@@ -29,6 +29,18 @@ public sealed partial class MoveListViewModel : ObservableObject
         if (token?.Node != null) _board.GoTo(token.Node);
     }
 
+    [RelayCommand]
+    private void DeleteVariation(MoveToken? token)
+    {
+        if (token?.Node != null) _board.DeleteNode(token.Node);
+    }
+
+    [RelayCommand]
+    private void PromoteVariation(MoveToken? token)
+    {
+        if (token?.Node != null) _board.PromoteNode(token.Node);
+    }
+
     private void Rebuild()
     {
         Tokens.Clear();
