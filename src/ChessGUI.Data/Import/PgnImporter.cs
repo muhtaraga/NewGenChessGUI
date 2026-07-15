@@ -27,7 +27,7 @@ public sealed class PgnImporter
         IProgress<ImportProgress>? progress = null, CancellationToken ct = default)
     {
         var sw = Stopwatch.StartNew();
-        int imported = 0, indexed = 0, skipped = 0;
+        int imported = 0, indexed = 0, skipped = 0, duplicates = 0;
 
         SqliteConnection conn = _db.Connection;
         _db.BeginBulkLoad();
@@ -45,10 +45,14 @@ public sealed class PgnImporter
             {
                 ct.ThrowIfCancellationRequested();
 
-                if (!TryImportGame(raw, options, nameCmd, gameCmd, posCmd, ref indexed))
+                switch (TryImportGame(raw, options, nameCmd, gameCmd, posCmd, ref indexed))
                 {
-                    skipped++;
-                    continue;
+                    case GameImportOutcome.Duplicate:
+                        duplicates++;
+                        continue;
+                    case GameImportOutcome.Invalid:
+                        skipped++;
+                        continue;
                 }
 
                 imported++;
@@ -56,7 +60,7 @@ public sealed class PgnImporter
                 {
                     tx.Commit();
                     tx.Dispose();
-                    progress?.Report(new ImportProgress(imported, indexed, skipped));
+                    progress?.Report(new ImportProgress(imported, indexed, skipped, duplicates));
                     tx = conn.BeginTransaction();
                     Bind(nameCmd, gameCmd, posCmd, tx);
                 }
@@ -74,7 +78,7 @@ public sealed class PgnImporter
             tx.Rollback();
             // Önceki batch'ler zaten commit edildi (bkz. yukarıdaki döngü) — bu sayıları kaybetmeden
             // ilet, yoksa çağıran taraf kısmi başarıyı tam başarısızlık sanır.
-            throw new PartialImportException(new ImportResult(imported, indexed, skipped, sw.Elapsed), ex);
+            throw new PartialImportException(new ImportResult(imported, indexed, skipped, duplicates, sw.Elapsed), ex);
         }
         finally
         {
@@ -82,19 +86,21 @@ public sealed class PgnImporter
             _db.EndBulkLoad();
         }
 
-        progress?.Report(new ImportProgress(imported, indexed, skipped));
-        return new ImportResult(imported, indexed, skipped, sw.Elapsed);
+        progress?.Report(new ImportProgress(imported, indexed, skipped, duplicates));
+        return new ImportResult(imported, indexed, skipped, duplicates, sw.Elapsed);
     }
 
-    private bool TryImportGame(string raw, ImportOptions options,
+    private enum GameImportOutcome { Imported, Duplicate, Invalid }
+
+    private GameImportOutcome TryImportGame(string raw, ImportOptions options,
         SqliteCommand nameCmd, SqliteCommand gameCmd, SqliteCommand posCmd, ref int indexed)
     {
         GameTree tree;
         try { tree = Pgn.Parse(raw); }
-        catch { return false; }
+        catch { return GameImportOutcome.Invalid; }
 
         // En az bir hamlesi olan oyunları al.
-        if (tree.Root.MainChild is null) return false;
+        if (tree.Root.MainChild is null) return GameImportOutcome.Invalid;
 
         string white = Tag(tree, "White", "?");
         string black = Tag(tree, "Black", "?");
@@ -123,13 +129,16 @@ public sealed class PgnImporter
         gameCmd.Parameters["@ply"].Value = plyCount;
         gameCmd.Parameters["@fen"].Value = (object?)startFen ?? DBNull.Value;
         gameCmd.Parameters["@pgn"].Value = raw.Trim();
+        gameCmd.Parameters["@hash"].Value = MovesHasher.Compute(tree);
 
-        long gameId = Convert.ToInt64(gameCmd.ExecuteScalar());
+        object? idResult = gameCmd.ExecuteScalar();
+        if (idResult is null) return GameImportOutcome.Duplicate; // aynı hamleler zaten kayıtlı
+        long gameId = Convert.ToInt64(idResult);
 
         if (options.IndexPositions)
             indexed += IndexPositions(tree, gameId, options.MaxIndexPly, posCmd);
 
-        return true;
+        return GameImportOutcome.Imported;
     }
 
     /// <summary>
@@ -191,14 +200,15 @@ public sealed class PgnImporter
         var cmd = conn.CreateCommand();
         cmd.CommandText = """
             INSERT INTO Games
-                (WhiteId, BlackId, EventId, Result, Date, Round, Eco, WhiteElo, BlackElo, PlyCount, StartFen, Pgn)
-            VALUES
-                (@white, @black, @event, @result, @date, @round, @eco, @welo, @belo, @ply, @fen, @pgn)
+                (WhiteId, BlackId, EventId, Result, Date, Round, Eco, WhiteElo, BlackElo, PlyCount, StartFen, Pgn, MovesHash)
+            SELECT @white, @black, @event, @result, @date, @round, @eco, @welo, @belo, @ply, @fen, @pgn, @hash
+            WHERE NOT EXISTS (SELECT 1 FROM Games WHERE MovesHash = @hash)
             RETURNING Id;
             """;
         foreach (string p in new[] { "@white", "@black", "@event", "@result", "@date", "@round",
                                      "@eco", "@welo", "@belo", "@ply", "@fen", "@pgn" })
             cmd.Parameters.Add(p, SqliteType.Text);
+        cmd.Parameters.Add("@hash", SqliteType.Integer);
         cmd.Prepare();
         return cmd;
     }

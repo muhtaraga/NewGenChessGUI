@@ -1,10 +1,10 @@
 namespace ChessGUI.Data.Import;
 
 /// <summary>İçe aktarma sırasında ilerleme bildirimi.</summary>
-public readonly record struct ImportProgress(int GamesImported, int PositionsIndexed, int Skipped);
+public readonly record struct ImportProgress(int GamesImported, int PositionsIndexed, int Skipped, int Duplicates);
 
 /// <summary>İçe aktarma bitince özet.</summary>
-public readonly record struct ImportResult(int GamesImported, int PositionsIndexed, int Skipped, TimeSpan Elapsed)
+public readonly record struct ImportResult(int GamesImported, int PositionsIndexed, int Skipped, int Duplicates, TimeSpan Elapsed)
 {
     public double GamesPerSecond => Elapsed.TotalSeconds > 0 ? GamesImported / Elapsed.TotalSeconds : 0;
 }

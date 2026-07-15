@@ -125,8 +125,8 @@
         </Grid>
 
         <!-- Sonuç listesi -->
-        <DataGrid Grid.Row="2" ItemsSource="{Binding Results}" SelectedItem="{Binding SelectedGame}"
-                  AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single"
+        <DataGrid x:Name="ResultsGrid" Grid.Row="2" ItemsSource="{Binding Results}" SelectedItem="{Binding SelectedGame}"
+                  AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Extended"
                   HeadersVisibility="Column" CanUserResizeRows="False"
                   MouseDoubleClick="OnGridDoubleClick">
             <DataGrid.Columns>
@@ -146,6 +146,8 @@
         <DockPanel Grid.Row="3" Margin="0,10,0,0">
             <Button Content="Oyunu Aç →" Command="{Binding OpenSelectedGameCommand}"
                     DockPanel.Dock="Right" MinWidth="110"/>
+            <Button Content="Seçilenleri Sil" Click="OnDeleteSelectedClick"
+                    DockPanel.Dock="Right" Margin="0,0,8,0"/>
             <TextBlock Text="{Binding StatusText}" VerticalAlignment="Center"
                        Foreground="{DynamicResource MutedForeground}"/>
         </DockPanel>

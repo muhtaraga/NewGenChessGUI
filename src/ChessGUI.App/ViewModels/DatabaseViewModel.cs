@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Linq;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -146,7 +147,8 @@ public sealed partial class DatabaseViewModel : ObservableObject, IDisposable
 
         var progress = new Progress<ImportProgress>(p =>
             ImportStatus = $"{p.GamesImported:N0} oyun · {p.PositionsIndexed:N0} pozisyon" +
-                           (p.Skipped > 0 ? $" · {p.Skipped} atlandı" : ""));
+                           (p.Duplicates > 0 ? $" · {p.Duplicates} yinelenen atlandı" : "") +
+                           (p.Skipped > 0 ? $" · {p.Skipped} hatalı atlandı" : ""));
 
         try
         {
@@ -158,8 +160,9 @@ public sealed partial class DatabaseViewModel : ObservableObject, IDisposable
             });
 
             StatusText = $"{result.GamesImported:N0} oyun aktarıldı " +
-                         $"({result.GamesPerSecond:N0} oyun/sn, {result.PositionsIndexed:N0} pozisyon indekslendi).";
-            RefreshStats();
+                         $"({result.GamesPerSecond:N0} oyun/sn, {result.PositionsIndexed:N0} pozisyon indekslendi)" +
+                         (result.Duplicates > 0 ? $", {result.Duplicates:N0} yinelenen atlandı" : "") + ".";
+            RefreshResults(BuildQuery()); // liste yeni aktarılan oyunları göstersin
             RepositoryChanged?.Invoke(); // kitap panosu yeni oyunlarla güncellensin
         }
         catch (PartialImportException ex)
@@ -167,7 +170,7 @@ public sealed partial class DatabaseViewModel : ObservableObject, IDisposable
             // Önceki toplu işlemler zaten veritabanına yazıldı — kullanıcıya kısmi başarıyı bildir,
             // aksi halde "hata" mesajı yüzlerce/binlerce zaten aktarılmış oyunu gizler.
             StatusText = ex.Message;
-            RefreshStats();
+            RefreshResults(BuildQuery());
             RepositoryChanged?.Invoke();
         }
         catch (Exception ex)
@@ -198,8 +201,12 @@ public sealed partial class DatabaseViewModel : ObservableObject, IDisposable
             if (result.GamesImported > 0)
             {
                 StatusText = "Oyun veritabanına eklendi.";
-                RefreshStats();
+                if (_repo is not null) RefreshResults(BuildQuery()); // liste yeni oyunu göstersin
                 RepositoryChanged?.Invoke(); // kitap panosu yeni oyunla güncellensin
+            }
+            else if (result.Duplicates > 0)
+            {
+                StatusText = "Bu oyun zaten veritabanında var.";
             }
             else
             {
@@ -248,15 +255,23 @@ public sealed partial class DatabaseViewModel : ObservableObject, IDisposable
         try
         {
             if (busyText != null) StatusText = busyText;
-            List<GameHeader> hits = _repo.Search(query);
-            Results.Clear();
-            foreach (GameHeader g in hits) Results.Add(g);
-            StatusText = $"{hits.Count:N0} oyun bulundu" + (hits.Count >= query.Limit ? " (ilk 1000)" : "") + ".";
+            int count = RefreshResults(query);
+            StatusText = $"{count:N0} oyun bulundu" + (count >= query.Limit ? " (ilk 1000)" : "") + ".";
         }
         catch (Exception ex)
         {
             StatusText = $"Arama hatası: {ex.Message}";
         }
+    }
+
+    /// <summary>Mevcut filtrelerle sonuç listesini yeniden yükler; <see cref="StatusText"/>'e dokunmaz
+    /// (içe aktarma/kaydetme sonrası özet mesajının üzerine yazılmasın diye).</summary>
+    private int RefreshResults(GameQuery query)
+    {
+        List<GameHeader> hits = _repo!.Search(query);
+        Results.Clear();
+        foreach (GameHeader g in hits) Results.Add(g);
+        return hits.Count;
     }
 
     // --- Oyun açma ----------------------------------------------------------
@@ -278,11 +293,25 @@ public sealed partial class DatabaseViewModel : ObservableObject, IDisposable
         }
     }
 
-    private void RefreshStats()
+    /// <summary>Verilen oyunları veritabanından siler (veritabanı penceresindeki tekli/toplu seçim için).</summary>
+    public void DeleteGames(IEnumerable<GameHeader> games)
     {
         if (_repo is null) return;
-        StatusText = $"{_repo.GameCount():N0} oyun · {_repo.PlayerCount():N0} oyuncu · " +
-                     $"{_repo.PositionCount():N0} indeksli pozisyon.";
+        List<GameHeader> list = games.ToList();
+        if (list.Count == 0) return;
+
+        try
+        {
+            _repo.DeleteGames(list.Select(g => g.Id));
+            foreach (GameHeader g in list) Results.Remove(g);
+            StatusText = $"{list.Count:N0} oyun silindi.";
+            if (SelectedGame is not null && list.Contains(SelectedGame)) SelectedGame = null;
+            RepositoryChanged?.Invoke(); // kitap panosu güncel kalsın
+        }
+        catch (Exception ex)
+        {
+            StatusText = $"Silme hatası: {ex.Message}";
+        }
     }
 
     private static string? NullIfEmpty(string s) => string.IsNullOrWhiteSpace(s) ? null : s;

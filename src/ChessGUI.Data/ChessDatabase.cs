@@ -1,4 +1,6 @@
 using Microsoft.Data.Sqlite;
+using ChessGUI.Core.Notation;
+using ChessGUI.Data.Import;
 
 namespace ChessGUI.Data;
 
@@ -75,7 +77,8 @@ public sealed class ChessDatabase : IDisposable
                 BlackElo INTEGER,
                 PlyCount INTEGER NOT NULL DEFAULT 0,
                 StartFen TEXT,
-                Pgn      TEXT NOT NULL
+                Pgn      TEXT NOT NULL,
+                MovesHash INTEGER NOT NULL DEFAULT 0
             );
             CREATE INDEX IF NOT EXISTS ix_games_white ON Games(WhiteId);
             CREATE INDEX IF NOT EXISTS ix_games_black ON Games(BlackId);
@@ -93,9 +96,17 @@ public sealed class ChessDatabase : IDisposable
 
         // Aşama 6'da oluşturulmuş eski veritabanlarını (NextMove sütunu olmadan) geriye dönük yükselt.
         EnsureColumn("PositionIndex", "NextMove", "TEXT");
+
+        // MovesHash eklenmeden önce oluşturulmuş eski veritabanlarını yükselt ve mevcut oyunlar
+        // için hash'i geriye dönük hesapla (aksi halde yükseltmeden önce eklenmiş oyunlar
+        // yinelenen-oyun kontrolünde hiç yakalanmaz). İndeks, sütun kesin var olduktan sonra kurulur —
+        // aksi halde eski veritabanlarında "no such column" hatası verir.
+        bool addedMovesHash = EnsureColumn("Games", "MovesHash", "INTEGER NOT NULL DEFAULT 0");
+        Exec("CREATE INDEX IF NOT EXISTS ix_games_moveshash ON Games(MovesHash);");
+        if (addedMovesHash) BackfillMovesHash();
     }
 
-    private void EnsureColumn(string table, string column, string sqlType)
+    private bool EnsureColumn(string table, string column, string sqlType)
     {
         using (var check = _connection.CreateCommand())
         {
@@ -103,9 +114,46 @@ public sealed class ChessDatabase : IDisposable
             using SqliteDataReader r = check.ExecuteReader();
             while (r.Read())
                 if (string.Equals(r.GetString(1), column, StringComparison.OrdinalIgnoreCase))
-                    return;
+                    return false;
         }
         Exec($"ALTER TABLE {table} ADD COLUMN {column} {sqlType};");
+        return true;
+    }
+
+    /// <summary>Var olan tüm oyunların ham PGN'ini yeniden ayrıştırıp <c>MovesHash</c>'i doldurur.</summary>
+    private void BackfillMovesHash()
+    {
+        var updates = new List<(long Id, long Hash)>();
+        using (var select = _connection.CreateCommand())
+        {
+            select.CommandText = "SELECT Id, Pgn FROM Games;";
+            using SqliteDataReader r = select.ExecuteReader();
+            while (r.Read())
+            {
+                long id = r.GetInt64(0);
+                string pgn = r.GetString(1);
+                long hash = 0;
+                try { hash = MovesHasher.Compute(Pgn.Parse(pgn)); } catch { /* bozuk PGN — hash 0 kalır */ }
+                updates.Add((id, hash));
+            }
+        }
+        if (updates.Count == 0) return;
+
+        using SqliteTransaction tx = _connection.BeginTransaction();
+        using (var update = _connection.CreateCommand())
+        {
+            update.Transaction = tx;
+            update.CommandText = "UPDATE Games SET MovesHash = @h WHERE Id = @id;";
+            update.Parameters.Add("@h", SqliteType.Integer);
+            update.Parameters.Add("@id", SqliteType.Integer);
+            foreach ((long id, long hash) in updates)
+            {
+                update.Parameters["@h"].Value = hash;
+                update.Parameters["@id"].Value = id;
+                update.ExecuteNonQuery();
+            }
+        }
+        tx.Commit();
     }
 
     /// <summary>İçe aktarma sırasında dayanıklılığı geçici olarak düşürerek hızlandırır.</summary>

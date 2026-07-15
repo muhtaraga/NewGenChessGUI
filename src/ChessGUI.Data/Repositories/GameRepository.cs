@@ -103,6 +103,42 @@ public sealed class GameRepository
         return cmd.ExecuteScalar() as string;
     }
 
+    /// <summary>Verilen oyunları (ve varsa PositionIndex girdilerini) siler. Tek/toplu silme için kullanılır.</summary>
+    public void DeleteGames(IEnumerable<long> ids)
+    {
+        List<long> idList = ids as List<long> ?? ids.ToList();
+        if (idList.Count == 0) return;
+
+        using SqliteTransaction tx = _db.Connection.BeginTransaction();
+
+        // PositionIndex.GameId -> Games(Id) FK'si (PRAGMA foreign_keys=ON) yüzünden önce bağımlı satırlar silinmeli.
+        using (var delPos = _db.Connection.CreateCommand())
+        {
+            delPos.Transaction = tx;
+            delPos.CommandText = "DELETE FROM PositionIndex WHERE GameId = @id;";
+            delPos.Parameters.Add("@id", SqliteType.Integer);
+            foreach (long id in idList)
+            {
+                delPos.Parameters["@id"].Value = id;
+                delPos.ExecuteNonQuery();
+            }
+        }
+
+        using (var delGame = _db.Connection.CreateCommand())
+        {
+            delGame.Transaction = tx;
+            delGame.CommandText = "DELETE FROM Games WHERE Id = @id;";
+            delGame.Parameters.Add("@id", SqliteType.Integer);
+            foreach (long id in idList)
+            {
+                delGame.Parameters["@id"].Value = id;
+                delGame.ExecuteNonQuery();
+            }
+        }
+
+        tx.Commit();
+    }
+
     private static string Like(string s) => "%" + s.Trim() + "%";
 
     /// <summary>"YYYY-MM-DD" → görüntüleme için "YYYY.MM.DD"; sıfır alanlar gizlenir.</summary>
