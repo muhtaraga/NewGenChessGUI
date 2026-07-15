@@ -57,10 +57,10 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="{Binding Play.BlackPlayerName}" FontWeight="SemiBold"
+                        <TextBlock Grid.Column="0" Text="{Binding Play.TopPlayerName}" FontWeight="SemiBold"
                                    VerticalAlignment="Center"/>
                         <Border Grid.Column="1" Background="#1B1B1F" CornerRadius="6" Padding="12,6">
-                            <TextBlock Text="{Binding Play.Clock.BlackClockText}" FontFamily="Consolas" FontSize="20"
+                            <TextBlock Text="{Binding Play.TopClockText}" FontFamily="Consolas" FontSize="20"
                                        Foreground="{DynamicResource AccentBrush}" FontWeight="Bold"/>
                         </Border>
                     </Grid>
@@ -88,10 +88,10 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="{Binding Play.WhitePlayerName}" FontWeight="SemiBold"
+                        <TextBlock Grid.Column="0" Text="{Binding Play.BottomPlayerName}" FontWeight="SemiBold"
                                    VerticalAlignment="Center"/>
                         <Border Grid.Column="1" Background="#1B1B1F" CornerRadius="6" Padding="12,6">
-                            <TextBlock Text="{Binding Play.Clock.WhiteClockText}" FontFamily="Consolas" FontSize="20"
+                            <TextBlock Text="{Binding Play.BottomClockText}" FontFamily="Consolas" FontSize="20"
                                        Foreground="{DynamicResource AccentBrush}" FontWeight="Bold"/>
                         </Border>
                     </Grid>

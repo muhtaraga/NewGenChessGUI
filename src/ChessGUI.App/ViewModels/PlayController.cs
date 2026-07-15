@@ -48,6 +48,13 @@ public sealed partial class PlayController : ObservableObject, IDisposable
     [ObservableProperty] private string _whitePlayerName = "Beyaz";
     [ObservableProperty] private string _blackPlayerName = "Siyah";
 
+    // Tahta yönelimine göre üst/alt yerleşim: tahta çevrilince (BlackBottom) alt taraf siyah olur.
+    public bool IsFlipped => _board.Orientation == Controls.BoardOrientation.BlackBottom;
+    public string TopPlayerName    => IsFlipped ? WhitePlayerName : BlackPlayerName;
+    public string BottomPlayerName => IsFlipped ? BlackPlayerName : WhitePlayerName;
+    public string TopClockText     => IsFlipped ? Clock.WhiteClockText : Clock.BlackClockText;
+    public string BottomClockText  => IsFlipped ? Clock.BlackClockText : Clock.WhiteClockText;
+
     /// <summary>Oyun bitince (kabuğun Analiz sekmesine geçmesi için) tetiklenir.</summary>
     public event EventHandler? RequestSwitchToAnalysis;
 
@@ -57,8 +64,41 @@ public sealed partial class PlayController : ObservableObject, IDisposable
         _sound = sound;
         _settings = settings;
         _board.MovePlayed += OnHumanMovePlayed;
+        // Tahta değişimi (çevirme dahil) üst/alt yerleşimi yeniden değerlendirir; Flip komutu,
+        // StartGame otomatik çevirmesi ve kabuktaki global çevirmeyi tek noktadan kapsar.
+        _board.Changed += (_, _) => NotifyOrientation();
+        // Saat tik'lerini yönelime göre üst/alt saate yansıt.
+        Clock.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName is nameof(ClockViewModel.WhiteClockText) or nameof(ClockViewModel.BlackClockText))
+            {
+                OnPropertyChanged(nameof(TopClockText));
+                OnPropertyChanged(nameof(BottomClockText));
+            }
+        };
         Clock.Flagged += OnFlagged;
         _board.InputLocked = true; // oyun başlamadan tahtada hamle yapılamasın
+    }
+
+    partial void OnWhitePlayerNameChanged(string value)
+    {
+        OnPropertyChanged(nameof(TopPlayerName));
+        OnPropertyChanged(nameof(BottomPlayerName));
+    }
+
+    partial void OnBlackPlayerNameChanged(string value)
+    {
+        OnPropertyChanged(nameof(TopPlayerName));
+        OnPropertyChanged(nameof(BottomPlayerName));
+    }
+
+    private void NotifyOrientation()
+    {
+        OnPropertyChanged(nameof(IsFlipped));
+        OnPropertyChanged(nameof(TopPlayerName));
+        OnPropertyChanged(nameof(BottomPlayerName));
+        OnPropertyChanged(nameof(TopClockText));
+        OnPropertyChanged(nameof(BottomClockText));
     }
 
     // --- Oyun kurma -----------------------------------------------------------

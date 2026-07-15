@@ -144,6 +144,13 @@ public sealed class BoardViewModel : IBoardInteraction
 
     public void LoadPgn(string pgn) => LoadGame(Pgn.Parse(pgn));
 
+    /// <summary>Konumu bir FEN dizesinden yükler. Geçersiz FEN, tahtaya dokunmadan bir istisna fırlatır.</summary>
+    public void LoadFen(string fen)
+    {
+        Position.FromFen(fen); // doğrula (geçersizse fırlatır, tahtaya dokunmadan)
+        LoadGame(new GameTree(fen));
+    }
+
     public string ExportPgn() => Pgn.Write(_tree);
 
     public void Flip()

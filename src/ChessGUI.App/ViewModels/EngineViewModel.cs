@@ -92,6 +92,12 @@ public sealed partial class EngineViewModel : ObservableObject, IDisposable
         if (value != null) _ = ActivateAsync(value);
     }
 
+    /// <summary>Açık motoru tamamen kapatıp (süreç öldürülür) yeniden başlatır — temiz durum için.</summary>
+    public void RestartEngine()
+    {
+        if (SelectedEngine is { } profile) _ = ActivateAsync(profile);
+    }
+
     private async Task ActivateAsync(EngineProfile profile)
     {
         bool wasAnalyzing = IsAnalyzing;

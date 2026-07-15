@@ -158,7 +158,30 @@ public sealed partial class ShellViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
-    private void ResetAnalysis() => Board.NewGame();
+    private void ResetAnalysis()
+    {
+        Board.NewGame();
+        Engine.RestartEngine();
+    }
+
+    /// <summary>FEN kutusuna girilen konumu analiz tahtasına yükler ve motoru yeniden başlatır (otomatik sıfırlama).</summary>
+    [RelayCommand]
+    private void ApplyFen()
+    {
+        string fen = Fen?.Trim() ?? "";
+        if (fen.Length == 0) return;
+        try
+        {
+            Board.LoadFen(fen);
+            Engine.RestartEngine();   // FEN ile değişince otomatik sıfırlama
+            StatusText = "Konum FEN'den yüklendi";
+        }
+        catch (Exception ex)
+        {
+            StatusText = $"Geçersiz FEN: {ex.Message}";
+            UpdateStatus();           // kutuyu geçerli konuma geri döndür
+        }
+    }
 
     [RelayCommand]
     private void LoadEngine()

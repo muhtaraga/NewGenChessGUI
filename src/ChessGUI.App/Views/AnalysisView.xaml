@@ -325,12 +325,19 @@
 
                 <!-- FEN -->
                 <StackPanel Grid.Row="5">
-                    <TextBlock Text="FEN" Style="{StaticResource MutedText}" Margin="0,12,0,4"/>
-                    <TextBox Text="{Binding Fen, Mode=OneWay}" IsReadOnly="True"
+                    <StackPanel Orientation="Horizontal" Margin="0,12,0,4">
+                        <TextBlock Text="FEN" Style="{StaticResource MutedText}"/>
+                        <TextBlock Text="— Enter ile uygula" Style="{StaticResource MutedText}" Margin="6,0,0,0"/>
+                    </StackPanel>
+                    <TextBox Text="{Binding Fen, UpdateSourceTrigger=PropertyChanged}"
                              TextWrapping="Wrap" Background="#1B1B1F"
-                             Foreground="{DynamicResource MutedForeground}"
+                             Foreground="{DynamicResource ForegroundBrush}"
                              BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1"
-                             Padding="8" FontFamily="Consolas" FontSize="12"/>
+                             Padding="8" FontFamily="Consolas" FontSize="12">
+                        <TextBox.InputBindings>
+                            <KeyBinding Key="Enter" Command="{Binding ApplyFenCommand}"/>
+                        </TextBox.InputBindings>
+                    </TextBox>
                 </StackPanel>
             </Grid>
         </Border>
