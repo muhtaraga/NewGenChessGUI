@@ -38,7 +38,11 @@ public sealed class EngineAnalyzer : IDisposable
         _engine.BestMoveReceived += OnBest;
         try
         {
-            _engine.GoMoveTime(fen, moveTimeMs);
+            // Geçmiş BİLEREK verilmiyor (null): oyun raporu her pozisyonu bağımsız bir
+            // konum olarak puanlar ve tekrar/50-hamle beraberliklerini kendisi ele alır
+            // (GameReportViewModel, GameStatus.Repetition dalında eval'i doğrudan 0 yapar).
+            // Oynatma yolunda ise geçmiş ŞARTTIR — bkz. UciEngine.SendPosition.
+            _engine.GoMoveTime(fen, null, moveTimeMs);
             using (ct.Register(() =>
             {
                 _engine.Stop();

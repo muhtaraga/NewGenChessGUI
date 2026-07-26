@@ -8,6 +8,7 @@ using ChessGUI.App.Controls;
 using ChessGUI.App.Models;
 using ChessGUI.App.Services;
 using ChessGUI.Core.Board;
+using ChessGUI.Core.Game;
 using ChessGUI.Core.Moves;
 using ChessGUI.Core.Notation;
 using ChessGUI.Engine;
@@ -232,7 +233,9 @@ public sealed partial class EngineViewModel : ObservableObject, IDisposable
         // MultiPV, motor arama yapmadığı bu an güvenle (yeniden) uygulanır — "go" sırasında
         // gönderilen setoption'ları bazı motorlar sessizce yok sayar.
         ApplyMultiPv(_engine);
-        _engine.AnalyzeFen(_analyzedFen);
+        // Geçmiş de verilir: aksi halde analiz, tahtada gerçekten oluşmuş bir tekrarı
+        // göremez ve beraberlik olan bir konumu kazanç gibi gösterir (bkz. GameTree.UciMoves).
+        _engine.AnalyzeFen(_board.Tree.StartFen, GameTree.UciMoves(_board.CurrentNode));
     }
 
     partial void OnMultiPvChanged(int value)

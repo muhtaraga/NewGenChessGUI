@@ -58,6 +58,24 @@ public sealed class GameTree
     }
 
     /// <summary>
+    /// Kökten <paramref name="node"/>'a kadar oynanan hamleler, UCI metni olarak sırayla.
+    /// <see cref="ZobristHistory"/>'nin MOTOR tarafındaki eşidir ve onunla birlikte
+    /// kullanılmalıdır: GUI üç-tekrarı Zobrist geçmişinden kendisi sayar, motor ise aynı
+    /// bilgiyi yalnızca "position ... moves ..." komutundaki bu listeden görebilir.
+    /// Motora salt FEN gönderilirse kökten önceki pozisyonlar motor için YOK hükmündedir;
+    /// o zaman motor kazandığı bir pozisyonda tekrarı göremeden beraberliğe yürür ve GUI
+    /// onu sayıp beraberlik ilan eder (ölçüldü: aynı pozisyonu geçmişle 0, geçmişsiz
+    /// -667 değerlendiriyordu).
+    /// </summary>
+    public static IReadOnlyList<string> UciMoves(GameNode node)
+    {
+        var moves = new List<string>();
+        foreach (GameNode n in PathFromRoot(node))
+            if (!n.IsRoot) moves.Add(n.Move.ToUci());
+        return moves;
+    }
+
+    /// <summary>
     /// <paramref name="parent"/> düğümüne bir hamle ekler. Aynı hamle zaten varsa mevcut çocuk
     /// döndürülür (giriş transpozisyonu). Aksi halde yeni düğüm eklenir; ilk çocuk yoksa ana hat,
     /// varsa varyant olur. <paramref name="positionBefore"/> hamleden önceki pozisyondur (SAN + numara için).

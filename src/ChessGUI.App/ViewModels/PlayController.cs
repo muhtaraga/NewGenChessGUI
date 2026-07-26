@@ -226,14 +226,22 @@ public sealed partial class PlayController : ObservableObject, IDisposable
             UciEngine? engine = side == Color.White ? _whiteEngine : _blackEngine;
             if (engine is not { IsRunning: true }) return;
 
-            string fen = _board.Position.ToFen();
+            // Motora pozisyon BAŞLANGIÇ FEN'i + o günden beri oynanan hamleler olarak verilir,
+            // salt güncel FEN olarak değil. Şart: üç-tekrar ve 50-hamle beraberliğini motor
+            // ancak kendi pozisyon geçmişinden görebilir. Yukarıdaki satırda oyunu bitirirken
+            // aynı geçmişi (ZobristHistory) zaten kullanıyoruz — motora vermemek, GUI'nin
+            // bildiği bir beraberliği motordan saklamak olurdu ve tam olarak bu yaşandı:
+            // motor kazandığı piyon sonunda tekrarı göremeden üç-tekrara yürüdü, GUI de onu
+            // sayıp beraberlik ilan etti.
+            string startFen = _board.Tree.StartFen;
+            IReadOnlyList<string> moves = GameTree.UciMoves(_board.CurrentNode);
             TimeControl currentTc = side == Color.White ? _whiteTimeControl : _blackTimeControl;
             if (currentTc.Kind == TimeControlKind.FixedPerMove)
-                engine.GoMoveTime(fen, currentTc.MoveTimeMs);
+                engine.GoMoveTime(startFen, moves, currentTc.MoveTimeMs);
             else if (currentTc.Kind == TimeControlKind.Unlimited)
-                engine.Go(fen, long.MaxValue / 4, long.MaxValue / 4, 0, 0);
+                engine.Go(startFen, moves, long.MaxValue / 4, long.MaxValue / 4, 0, 0);
             else
-                engine.Go(fen, Clock.WhiteMs, Clock.BlackMs, _whiteTimeControl.IncrementMs, _blackTimeControl.IncrementMs);
+                engine.Go(startFen, moves, Clock.WhiteMs, Clock.BlackMs, _whiteTimeControl.IncrementMs, _blackTimeControl.IncrementMs);
         }
     }
 

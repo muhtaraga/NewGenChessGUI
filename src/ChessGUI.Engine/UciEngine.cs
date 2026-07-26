@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 
 namespace ChessGUI.Engine;
 
@@ -125,27 +125,54 @@ public sealed class UciEngine : IDisposable
 
     public void NewGame() => Send("ucinewgame");
 
-    /// <summary>Verilen FEN pozisyonunu ayarlayıp sonsuz analiz başlatır.</summary>
-    public void AnalyzeFen(string fen)
+    /// <summary>
+    /// "position" komutunu kurar ve gönderir.
+    ///
+    /// <para><paramref name="moves"/> BAŞLANGIÇ pozisyonundan itibaren oynanan hamlelerdir
+    /// (bkz. <c>GameTree.UciMoves</c>) ve motorun tekrar (repetition) ile 50-hamle
+    /// beraberliğini görebilmesi için ŞARTTIR. Motor bu iki beraberliği yalnız kendi
+    /// pozisyon geçmişinden tespit edebilir; salt FEN gönderilirse kökten önceki
+    /// pozisyonlar onun için hiç var olmamıştır ve kazandığı bir sonu farkında olmadan
+    /// üç-tekrara sürükleyebilir. Geçmiş bilinmiyorsa <c>null</c> geçilir — bu bilinçli
+    /// bir seçim olmalı, unutkanlık değil (tek pozisyonluk toplu değerlendirme gibi).</para>
+    /// </summary>
+    private void SendPosition(string startFen, IReadOnlyList<string>? moves)
+        => Send(BuildPositionCommand(startFen, moves));
+
+    /// <summary>
+    /// "position" komut metnini kurar (saf fonksiyon — testlerin kapısı; hata tam olarak
+    /// bu dizgede yaşandığı için ayrı ve doğrudan sınanabilir tutuluyor).
+    /// </summary>
+    public static string BuildPositionCommand(string startFen, IReadOnlyList<string>? moves)
     {
-        Send($"position fen {fen}");
+        string head = startFen == ChessGUI.Core.Board.Position.StartFen
+            ? "position startpos"
+            : $"position fen {startFen}";
+        return moves is { Count: > 0 } ? $"{head} moves {string.Join(' ', moves)}" : head;
+    }
+
+    /// <summary>Pozisyonu ayarlayıp sonsuz analiz başlatır. <paramref name="moves"/>: bkz. <see cref="SendPosition"/>.</summary>
+    public void AnalyzeFen(string startFen, IReadOnlyList<string>? moves)
+    {
+        SendPosition(startFen, moves);
         Send("go infinite");
     }
 
     /// <summary>
-    /// Oyun saatine göre en iyi hamleyi arattırır: <c>position fen {fen}</c> + <c>go wtime.. btime.. winc.. binc..</c>.
+    /// Oyun saatine göre en iyi hamleyi arattırır: <c>position</c> + <c>go wtime.. btime.. winc.. binc..</c>.
     /// Motor <see cref="BestMoveReceived"/> olayıyla sonucu bildirir. Oyun oynatma (Play) katmanının ana yolu.
+    /// <paramref name="moves"/>: bkz. <see cref="SendPosition"/> — oynatma yolunda ASLA null olmamalı.
     /// </summary>
-    public void Go(string fen, long wtimeMs, long btimeMs, long wincMs, long bincMs)
+    public void Go(string startFen, IReadOnlyList<string>? moves, long wtimeMs, long btimeMs, long wincMs, long bincMs)
     {
-        Send($"position fen {fen}");
+        SendPosition(startFen, moves);
         Send($"go wtime {wtimeMs} btime {btimeMs} winc {wincMs} binc {bincMs}");
     }
 
-    /// <summary>Hamle başına sabit süreyle arattırır (<c>go movetime</c>).</summary>
-    public void GoMoveTime(string fen, int ms)
+    /// <summary>Hamle başına sabit süreyle arattırır (<c>go movetime</c>). <paramref name="moves"/>: bkz. <see cref="SendPosition"/>.</summary>
+    public void GoMoveTime(string startFen, IReadOnlyList<string>? moves, int ms)
     {
-        Send($"position fen {fen}");
+        SendPosition(startFen, moves);
         Send($"go movetime {ms}");
     }
 
