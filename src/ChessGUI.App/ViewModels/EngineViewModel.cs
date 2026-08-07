@@ -47,6 +47,8 @@ public sealed partial class EngineViewModel : ObservableObject, IDisposable
     [ObservableProperty] private string _engineName = "Motor yok";
     [ObservableProperty] private string _depthText = "";
     [ObservableProperty] private string _npsText = "";
+    /// <summary>Arama BAŞLAMADAN önceki ham (statik) motor değerlendirmesi; boş = motor bildirmedi.</summary>
+    [ObservableProperty] private string _rawEvalText = "";
     [ObservableProperty] private double _whiteWinProbability = 0.5;
     [ObservableProperty] private string _evalCaption = "0.0";
     [ObservableProperty] private bool _whiteFavored = true;
@@ -258,6 +260,9 @@ public sealed partial class EngineViewModel : ObservableObject, IDisposable
                 Lines.Add(new PvLine { Rank = i });
             Arrows = Array.Empty<BoardArrow>();
             TbHitsText = "";
+            // Ham eval POZİSYONA aittir: temizlenmezse yeni konumda bir öncekinin
+            // değeri ekranda kalır ve yanlış bilgi olur (motor yenisini basana dek).
+            RawEvalText = "";
         });
     }
 
@@ -273,29 +278,26 @@ public sealed partial class EngineViewModel : ObservableObject, IDisposable
     {
         if (!IsAnalyzing || !info.HasScore) return;
 
+        // Arama ÖNCESİ ham (statik) değerlendirme. ChessEngineNNUE "go" gelince, derinlik
+        // döngüsü başlamadan "info depth 0 score cp X" basar: ağın pozisyona tek başına ne
+        // dediği, aramanın süzgeci karışmadan.
+        //
+        // PV satırlarına YAZILAMAZ: Lines[0]'ı bir sonraki "info depth 1" milisaniyeler
+        // içinde ezer ve değer hiç görülmezdi (bu tam olarak yaşandı). O yüzden ayrı bir
+        // göstergede yaşıyor.
+        //
+        // Koşul PV'siz depth 0 ile sınırlı: gerçekten bir varyant bildiren bir motorun
+        // depth 0 satırı (varsa) normal yoldan işlenmeye devam etsin, oku kaybolmasın.
+        if (info.Depth == 0 && info.Pv.Count == 0)
+        {
+            RawEvalText = "ham " + ToWhitePov(info).Text;
+            return;
+        }
+
         int idx = info.MultiPv - 1;
         if (idx < 0 || idx >= Lines.Count) return;
 
-        // Skoru beyaz bakışına normalize et.
-        bool whitePos = _analyzedWhiteToMove;
-        string evalText;
-        double prob;
-        bool whiteFav;
-
-        if (info.ScoreMate is int mate)
-        {
-            int wm = whitePos ? mate : -mate;
-            evalText = wm > 0 ? $"#{wm}" : $"-#{-wm}";
-            prob = wm > 0 ? 1.0 : 0.0;
-            whiteFav = wm > 0;
-        }
-        else
-        {
-            int wcp = whitePos ? info.ScoreCp!.Value : -info.ScoreCp!.Value;
-            evalText = $"{(wcp >= 0 ? "+" : "")}{wcp / 100.0:0.00}";
-            prob = 1.0 / (1.0 + Math.Exp(-wcp / 350.0));
-            whiteFav = wcp >= 0;
-        }
+        (string evalText, double prob, bool whiteFav) = ToWhitePov(info);
 
         Move? firstMove = null;
         if (info.Pv.Count > 0)
@@ -329,6 +331,28 @@ public sealed partial class EngineViewModel : ObservableObject, IDisposable
             NpsText = FormatNps(info.Nps);
             TbHitsText = info.TbHits > 0 ? $"TB {info.TbHits:N0}" : "";
         }
+    }
+
+    /// <summary>
+    /// Motorun STM (hamle sırası olan taraf) bakışındaki skorunu beyaz bakışına çevirir ve
+    /// gösterim metni + kazanma olasılığı + "beyaz önde mi" üçlüsünü verir.
+    /// TEK KOPYA: hem baş varyant göstergeleri hem ham eval göstergesi buradan beslenir,
+    /// böylece ikisi birbirinden sürüklenemez.
+    /// </summary>
+    private (string Text, double Prob, bool WhiteFavored) ToWhitePov(AnalysisInfo info)
+    {
+        bool whitePos = _analyzedWhiteToMove;
+
+        if (info.ScoreMate is int mate)
+        {
+            int wm = whitePos ? mate : -mate;
+            return (wm > 0 ? $"#{wm}" : $"-#{-wm}", wm > 0 ? 1.0 : 0.0, wm > 0);
+        }
+
+        int wcp = whitePos ? info.ScoreCp!.Value : -info.ScoreCp!.Value;
+        return ($"{(wcp >= 0 ? "+" : "")}{wcp / 100.0:0.00}",
+                1.0 / (1.0 + Math.Exp(-wcp / 350.0)),
+                wcp >= 0);
     }
 
     private void RebuildArrows()

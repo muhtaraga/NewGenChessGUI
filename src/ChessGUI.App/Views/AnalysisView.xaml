@@ -297,6 +297,12 @@
                     <StackPanel Orientation="Horizontal" Margin="0,2,0,8">
                         <TextBlock Text="{Binding Engine.DepthText}" FontFamily="Consolas" FontSize="13"
                                    Foreground="{DynamicResource AccentBrush}" Margin="0,0,14,0"/>
+                        <!-- Arama baslamadan onceki ham (statik) motor degerlendirmesi.
+                             Motor bildirmiyorsa alan tamamen gizlenir. -->
+                        <TextBlock Text="{Binding Engine.RawEvalText}" FontFamily="Consolas" FontSize="13"
+                                   Style="{StaticResource MutedText}" Margin="0,0,14,0"
+                                   ToolTip="Arama başlamadan önce motorun ham (statik) değerlendirmesi — beyaz bakışı"
+                                   Visibility="{Binding Engine.RawEvalText, Converter={StaticResource EmptyToCollapsed}}"/>
                         <TextBlock Text="{Binding Engine.NpsText}" FontFamily="Consolas" FontSize="13"
                                    Style="{StaticResource MutedText}" Margin="0,0,14,0"/>
                         <TextBlock Text="{Binding Engine.TbHitsText}" FontFamily="Consolas" FontSize="13"

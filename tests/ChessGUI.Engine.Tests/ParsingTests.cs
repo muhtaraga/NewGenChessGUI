@@ -48,6 +48,25 @@ public class ParsingTests
         Assert.Null(AnalysisInfo.Parse("info depth 1 currmove e2e4 currmovenumber 1"));
     }
 
+    /// <summary>
+    /// Arama öncesi ham değerlendirme satırı ("info depth 0 score cp X", PV'siz).
+    /// EngineViewModel bu satırı PV listesine değil ayrı bir göstergeye yönlendiriyor ve
+    /// ayrımı <c>Depth == 0 && Pv.Count == 0</c> ile yapıyor — ayrıştırıcı bu iki alanı
+    /// böyle doldurmazsa o dal sessizce çalışmaz, satır PV listesine düşer ve bir sonraki
+    /// "info depth 1" tarafından ezilir (görünmez hata). Sözleşme burada kilitleniyor.
+    /// </summary>
+    [Fact]
+    public void AnalysisInfo_ParsesRawEvalLineWithZeroDepthAndNoPv()
+    {
+        var info = AnalysisInfo.Parse("info depth 0 score cp 31");
+
+        Assert.NotNull(info);
+        Assert.Equal(0, info!.Depth);
+        Assert.Empty(info.Pv);
+        Assert.Equal(31, info.ScoreCp);
+        Assert.True(info.HasScore);
+    }
+
     [Fact]
     public void UciOption_ParsesSpin()
     {
